@@ -1,0 +1,5 @@
+[general]
+env = "dev"
+db_connection = "postgres"
+timezone = "UTC"
+locale = "en"

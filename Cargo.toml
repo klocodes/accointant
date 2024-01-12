@@ -1,0 +1,27 @@
+[package]
+name = "metan"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix = "0.13"
+actix-web = "4.4"
+actix-web-validator = "5.0"
+actix-web-prom = "0.7"
+bcrypt = "0.15"
+chrono = "0.4"
+config = "0.13"
+dotenv = "0.15"
+futures-util = "0.3"
+log = "0.4.20"
+prometheus = "0.13"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.107"
+thiserror = "1.0.50"
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "chrono"] }
+uuid = { version = "1.5", features = ["v4", "fast-rng", "macro-diagnostics"] }
+validator = { version = "0.16", features = ["derive"] }
