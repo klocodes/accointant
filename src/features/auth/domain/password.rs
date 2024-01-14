@@ -1,6 +1,7 @@
 use bcrypt;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Password(String);
 
 impl Password {

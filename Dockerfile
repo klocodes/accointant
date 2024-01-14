@@ -1,15 +1,37 @@
 # Этап 1: Сборка приложения
-FROM rust:1.64-alpine as builder
-WORKDIR /app
-COPY . .
-RUN apk add --no-cache musl-dev
-RUN cargo build --release
+ARG RUST_VERSION=1.73
+
+FROM rust:${RUST_VERSION} as builder
+
+ARG TARGET=release
+
+COPY . /build
+
+WORKDIR /build
+
+RUN cargo install --path .
+
+# Собираем релизную версию приложения
+RUN if [ "$TARGET" = "release" ]; then cargo build --release; else cargo build; fi
+
 
 # Этап 2: Создание окончательного образа
-FROM alpine:latest
+FROM debian:bookworm-slim
 
-RUN apk add --no-cache libgcc
+ARG TARGET=release
 
-COPY --from=builder /usr/src/myapp/target/release/myapp /usr/local/bin/myapp
+RUN mkdir /app
 
-CMD ["myapp"]
+# Копируем собранное приложение из каталога target/release
+COPY --from=builder /build/target/${TARGET}/metan /app
+
+RUN rm -rf /build
+
+COPY config /app/config
+
+COPY .env /app/.env
+
+RUN mkdir /app/log
+
+# Указываем команду для запуска приложения
+CMD ["/app/metan"]

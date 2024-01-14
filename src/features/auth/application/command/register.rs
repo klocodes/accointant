@@ -8,7 +8,7 @@ pub fn register(data: RequestData) -> String {
         Email::new(data.email()).unwrap(),
         Password::new(data.password()).unwrap(),
         Password::new(data.password_confirmation()).unwrap()
-    );
+    ).unwrap();
 
     format!("Hello {}! Your password is '{}'", user.email().value(), user.password().value())
 }

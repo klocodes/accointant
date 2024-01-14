@@ -1,32 +1,34 @@
 use uuid;
 use chrono;
+use serde::{Deserialize, Serialize};
+use crate::errors::Error;
 
 use crate::features::auth::domain::token::Token;
 use crate::features::auth::domain::email::Email;
 use crate::features::auth::domain::password::Password;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct User {
     id: uuid::Uuid,
     email: Email,
     password: Password,
     registered_at: chrono::DateTime<chrono::Utc>,
+    #[serde(flatten)]
     confirmation_token: Option<Token>,
 }
 
 impl User {
-    pub fn new(email: Email, password: Password, password_confirmation: Password) -> Self {
-        if password.value() != password_confirmation.value() {
-            panic!("Passwords do not match");
-        }
+    pub fn new(email: Email, password: Password, password_confirmation: Password) -> Result<Self, Error> {
+        if password.value() != password_confirmation.value() {}
 
-        Self {
+        Ok(Self {
             id: uuid::Uuid::new_v4(),
             email,
             confirmation_token: None,
             password,
             registered_at: chrono::Utc::now(),
-        }
+
+        })
     }
 
     pub fn request_confirmation(&mut self) {

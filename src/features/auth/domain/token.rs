@@ -1,6 +1,10 @@
-#[derive(Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Token {
+    #[serde(rename = "confirmation_token")]
     value: String,
+    #[serde(rename = "confirmation_token_expires_at")]
     expires_at: chrono::DateTime<chrono::Utc>,
 }
 
