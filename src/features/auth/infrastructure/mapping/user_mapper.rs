@@ -1,8 +1,8 @@
 use crate::db::data_mapper::DataMapper;
-use crate::db::serializer::{Serialization, Serializer};
 use crate::errors::Error;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::infrastructure::mapping::user_schema::UserSchema;
+use crate::service::serializer::{Serialization, Serializer};
 
 pub struct UserMapper;
 

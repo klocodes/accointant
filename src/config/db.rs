@@ -11,7 +11,7 @@ pub struct PostgresConfig {
     port: u16,
     user: String,
     password: String,
-    database_name: String,
+    name: String,
 }
 
 impl DatabaseConfig {
@@ -37,7 +37,7 @@ impl PostgresConfig {
         &self.password
     }
 
-    pub fn database_name(&self) -> &str {
-        &self.database_name
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }

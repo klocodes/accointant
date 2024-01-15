@@ -1,9 +1,11 @@
 use actix_web::{post, HttpResponse, Responder, web::Json};
 use serde::Deserialize;
 use validator::Validate;
+
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;
-use crate::log_trace;
+use crate::errors::server::ServerErrors::InternalServerError;
+use crate::features::auth::application::command::register::register;
 
 #[derive(Deserialize, Validate)]
 pub struct RequestData {
@@ -31,10 +33,14 @@ impl RequestData {
     }
 }
 
-#[post("/register")]
-async fn register(data: Json<RequestData>) -> Result<impl Responder, Error> {
-    data.validate()
-        .map_err(|e| Error::Client(ClientErrors::BadRequest { message: Some(e.to_string().into()) }))?;
+#[post("/signup")]
+async fn signup(data: Json<RequestData>) -> Result<impl Responder, Error> {
+    if let Err(e) = data.validate() {
+        return Err(Error::Client(ClientErrors::BadRequest { message: Some(e.to_string().into()) }));
+    }
 
-    Ok(HttpResponse::Ok().body("Success!"))
+    register(data.into_inner())
+        .map_err(|e| Error::Server(InternalServerError {context: Some(e.to_string().into()) }))?;
+
+    Ok(HttpResponse::Ok())
 }

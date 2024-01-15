@@ -1,3 +1,4 @@
+use std::time::Duration;
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 
@@ -12,12 +13,13 @@ pub async fn connect(cfg: &PostgresConfig) -> DbPool {
         cfg.password(),
         cfg.host(),
         cfg.port(),
-        cfg.database_name()
+        cfg.name()
     );
 
-
+println!("database_url: {}", database_url);
     PgPoolOptions::new()
-        .max_connections(5)
+        .acquire_timeout(Duration::from_secs(30))
+        .max_connections(100)
         .connect(database_url.as_str())
         .await
         .expect("Could not connect to the database")

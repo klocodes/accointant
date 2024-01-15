@@ -73,7 +73,7 @@ impl ResponseError for Error {
 
         HttpResponse::build(status_code)
             .json(serde_json::json!({
-                "error": "test"
+                "error": error_message
             }))
     }
 }

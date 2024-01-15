@@ -27,6 +27,3 @@ tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "chrono"] }
 uuid = { version = "1.5", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 validator = { version = "0.16", features = ["derive"] }
-quote = { version = "1.0.35", features = [] }
-syn = "2.0.48"
-proc-macro2 = { version = "1.0.76", features = [] }
