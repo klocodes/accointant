@@ -1,26 +1,19 @@
+use std::time::Duration;
 use serde::Deserialize;
 
 #[derive(Deserialize, Clone)]
-pub struct DatabaseConfig {
-    pg: PostgresConfig,
-}
-
-#[derive(Deserialize, Clone)]
-pub struct PostgresConfig {
+pub struct DbConfig {
     host: String,
     port: u16,
     user: String,
     password: String,
     name: String,
+    driver: String,
+    max_connections: u32,
+    timeout: u64,
 }
 
-impl DatabaseConfig {
-    pub fn pg(&self) -> &PostgresConfig {
-        &self.pg
-    }
-}
-
-impl PostgresConfig {
+impl DbConfig {
     pub fn host(&self) -> &str {
         &self.host
     }
@@ -39,5 +32,17 @@ impl PostgresConfig {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn driver(&self) -> &str {
+        &self.driver
+    }
+
+    pub fn max_connections(&self) -> u32 {
+        self.max_connections
+    }
+
+    pub fn timeout(&self) -> Duration {
+        Duration::from_secs(self.timeout)
     }
 }

@@ -1,5 +1,5 @@
 run:
-    PROJECT_ROOT=$(pwd) RUST_BACKTRACE=1 RUST_LOG=actix_web=debug cargo run
+    PROJECT_ROOT=$(pwd) RUST_BACKTRACE="full" RUST_LOG=actix_web=debug cargo run
 
 migrate-create *options:
     just migrate create -dir db/migrations -ext sql {{options}}

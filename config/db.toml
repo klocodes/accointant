@@ -1,7 +1,9 @@
 [db]
-[db.pg]
 host = "localhost"
 port = 5432
 user = "postgres"
 password = "postgres"
 name = "postgres"
+driver = "postgres"
+max_connections = 1
+timeout = 30

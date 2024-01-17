@@ -12,6 +12,7 @@ pub struct User {
     id: uuid::Uuid,
     email: Email,
     password: Password,
+    #[serde(rename = "created_at")]
     registered_at: chrono::DateTime<chrono::Utc>,
     #[serde(flatten)]
     confirmation_token: Option<Token>,

@@ -1,7 +1,9 @@
-/*use crate::features::auth::email::Email;
-use crate::features::auth::user::User;
+use async_trait::async_trait;
+use crate::errors::Error;
+use crate::features::auth::domain::user::User;
 
+#[async_trait]
 pub trait UserRepository {
-    fn find_by_email(&self, email: &Email) -> Option<User>;
-    fn save(&self, user: &User) -> Result<(), String>;
-}*/
+    async fn find_by_email(&self, email: &str) -> Result<Option<User>, Error>;
+    async fn create(&self, user: &User) -> Result<(), Error>;
+}

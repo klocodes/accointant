@@ -17,7 +17,7 @@ const LOG_CONFIG_PATH: &str = "config/log.toml";
 #[derive(Deserialize, Clone)]
 pub struct Config {
     general: general::GeneralConfig,
-    db: db::DatabaseConfig,
+    db: db::DbConfig,
     server: server::ServerConfig,
     log: log::LogConfig,
 }
@@ -55,7 +55,7 @@ impl Config {
         &self.general
     }
 
-    pub fn db(&self) -> &db::DatabaseConfig {
+    pub fn db(&self) -> &db::DbConfig {
         &self.db
     }
 
