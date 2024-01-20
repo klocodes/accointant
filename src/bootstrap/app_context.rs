@@ -1,7 +1,7 @@
 use tracing_appender::non_blocking::WorkerGuard;
 use crate::config::Config;
-use crate::db::manager::factory::DbManagerFactory;
-use crate::db::manager::pg_manager::PgManager;
+use crate::db::factory::DbManagerFactory;
+use crate::db::pg_manager::PgManager;
 use crate::errors::Error;
 
 #[derive(Clone)]

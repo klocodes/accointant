@@ -4,7 +4,7 @@ use sqlx::{ConnectOptions, PgPool, Postgres};
 use sqlx::pool::PoolConnection;
 use sqlx::postgres::{PgPoolOptions};
 
-use crate::db::manager::db_manager::DbManager;
+use crate::db::db_manager::DbManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
@@ -45,14 +45,14 @@ impl DbManager for PgManager {
         })
     }
 
-    async fn get_pool(&self) -> Result<Self::Pool, Error> {
+    async fn pool(&self) -> Result<Self::Pool, Error> {
         self.pool.clone().ok_or(Error::Server(InternalServerError {
             context: Some("Pool is not initialized".into()),
         }))
     }
 
-    async fn get_connection(&self) -> Result<Self::Connection, Error> {
-        let pool = self.get_pool().await?;
+    async fn connection(&self) -> Result<Self::Connection, Error> {
+        let pool = self.pool().await?;
 
         let connection = pool.acquire().await.map_err(|e| {
             Error::Server(InternalServerError {

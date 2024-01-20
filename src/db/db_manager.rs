@@ -12,6 +12,6 @@ pub trait DbManager: Clone {
 
     async fn connect(&self, url: &str, timeout: Duration, max_connections: u32) -> Result<Self, Error>;
 
-    async fn get_pool(&self) -> Result<Self::Pool, Error>;
-    async fn get_connection(&self) -> Result<Self::Connection, Error>;
+    async fn pool(&self) -> Result<Self::Pool, Error>;
+    async fn connection(&self) -> Result<Self::Connection, Error>;
 }

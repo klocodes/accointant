@@ -1,4 +1,4 @@
-/*use crate::errors::client::ClientErrors;
+use crate::errors::client::ClientErrors;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors;
 use crate::features::auth::domain::user::User;
@@ -10,8 +10,8 @@ use crate::http::handlers::auth::registration::RequestData;
 pub struct RegisterCommand;
 
 impl RegisterCommand {
-    pub fn exec(rep: impl UserRepository, request_data: RequestData) -> Result<(), Error> {
-        let email_exists: bool = rep.email_exists(request_data.email())?;
+    pub async fn exec(rep: impl UserRepository, request_data: RequestData) -> Result<(), Error> {
+        let email_exists: bool = rep.email_exists(request_data.email()).await?;
 
         if email_exists {
             return Err(Error::Client(ClientErrors::BadRequest {
@@ -38,8 +38,8 @@ impl RegisterCommand {
 
         let user = User::new(email, password.clone(), password)?;
 
-        rep.create(&user)?;
+        rep.create(&user).await?;
 
         Ok(())
     }
-}*/
+}

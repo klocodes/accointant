@@ -1,2 +1,3 @@
-pub mod manager;
-pub mod query_builder;
+pub mod db_manager;
+pub mod pg_manager;
+pub mod factory;

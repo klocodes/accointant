@@ -4,9 +4,10 @@ use serde::Deserialize;
 use validator::Validate;
 
 use crate::bootstrap::app_context::AppContext;
-use crate::db::query_builder::QueryBuilder;
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;
+use crate::features::auth::application::command::register::RegisterCommand;
+use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
 
 #[derive(Deserialize, Validate)]
 pub struct RequestData {
@@ -43,15 +44,10 @@ async fn register(data: Json<RequestData>, state: Data<AppContext>) -> Result<im
 
     let app_context = state.as_ref().clone();
 
-    let query_builder = QueryBuilder::new(app_context);
+    let user_rep = DbUserRepository::new(app_context);
 
-   /* let db_manager = state.as_ref().clone();
-    let query_builder = QueryBuilder::new(db_manager);
+    let _ = RegisterCommand::exec(user_rep, data.into_inner()).await?;
 
-    let user_rep = DbUserRepository::new(query_builder);
-
-    let _ = RegisterCommand::exec(user_rep, data.into_inner())?;
-*/
     Ok(HttpResponse::Ok())
 
 }

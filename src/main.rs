@@ -1,12 +1,8 @@
-use std::sync::{Arc, Mutex};
 use actix::Actor;
-use crate::bootstrap::app_context;
 use crate::bootstrap::app_context::AppContext;
 
-use crate::config::actor::ConfigActor;
 use crate::service::data_mapper::DataMapper;
-use crate::db::manager::db_manager::DbManager;
-use crate::db::manager::factory::DbManagerFactory;
+use crate::db::db_manager::DbManager;
 
 mod config;
 mod errors;
