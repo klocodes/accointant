@@ -1,10 +1,10 @@
-use tokio::sync::Mutex;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use actix::Actor;
 
 use crate::config::actor::ConfigActor;
-use crate::db::data_mapper::DataMapper;
-use crate::db::manager::factory::DbFactory;
+use crate::service::data_mapper::DataMapper;
+use crate::db::manager::db_manager::DbManager;
+use crate::db::manager::factory::DbManagerFactory;
 
 mod config;
 mod errors;
@@ -26,7 +26,7 @@ async fn main() {
 
     let _guard = log::logger::init(log_config).await.unwrap();
 
-    let db_manager = DbFactory::create(&db_config).await.expect("Failed to create database manager");
+    let db_manager = DbManagerFactory::create(&db_config).expect("Failed to create db manager");
 
     http::server::run(server_config, config_actor, db_manager).await.expect("Failed to start server");
 

@@ -5,5 +5,5 @@ pub mod registration;
 
 pub fn config(cfg: &mut ServiceConfig) {
     cfg.service(login::login);
-    cfg.service(registration::register);
+   // cfg.service(registration::register);
 }

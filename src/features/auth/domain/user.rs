@@ -14,6 +14,7 @@ pub struct User {
     password: Password,
     #[serde(rename = "created_at")]
     registered_at: chrono::DateTime<chrono::Utc>,
+    updated_at: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(flatten)]
     confirmation_token: Option<Token>,
 }
@@ -28,6 +29,7 @@ impl User {
             confirmation_token: None,
             password,
             registered_at: chrono::Utc::now(),
+            updated_at: Option::from(chrono::Utc::now()),
 
         })
     }

@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
 use uuid::Uuid;
-use crate::db::data_mapper::DataMapper;
+use crate::service::data_mapper::DataMapper;
 use crate::features::auth::domain::user::User;
 
-#[derive(Serialize, Deserialize, Debug, FromRow)]
+#[derive(Serialize, Deserialize)]
 pub struct UserSchema {
     id: Uuid,
     name: Option<String>,

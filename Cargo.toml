@@ -21,7 +21,6 @@ prometheus = "0.13"
 serde = { version = "1.0", features = ["derive"] }
 serde_cbor = "0.11"
 serde_json = "1.0.107"
-sqlx = { version = "0.7", features = ["chrono", "macros", "migrate", "postgres", "mysql", "sqlite", "uuid", "runtime-tokio"] }
 thiserror = "1.0.50"
 tokio = { version = "1.35", features = ["full"] }
 tracing = "0.1"
@@ -30,3 +29,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "chrono"] }
 uuid = { version = "1.5", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 validator = { version = "0.16", features = ["derive"] }
 async-trait = "0.1.77"
+postgres = "0.19.7"
+r2d2 = "0.8.10"
+r2d2_postgres = "0.18.1"
