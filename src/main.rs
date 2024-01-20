@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 use actix::Actor;
+use crate::bootstrap::app_context;
+use crate::bootstrap::app_context::AppContext;
 
 use crate::config::actor::ConfigActor;
 use crate::service::data_mapper::DataMapper;
@@ -13,22 +15,15 @@ mod http;
 mod log;
 mod db;
 mod service;
+mod bootstrap;
 
 
 #[actix_web::main]
 async fn main() {
-    let config = config::Config::new();
-    let log_config = config.log();
-    let db_config = config.db();
-    let server_config = config.server();
+   let (app_context, _guard) = AppContext::new().await.expect("Failed to create app context");
+   let server_config = app_context.get_config().server();
 
-    let config_actor = ConfigActor::new(config.clone()).start();
+   http::server::run(server_config, app_context.clone()).await.expect("Failed to start server");
 
-    let _guard = log::logger::init(log_config).await.unwrap();
-
-    let db_manager = DbManagerFactory::create(&db_config).expect("Failed to create db manager");
-
-    http::server::run(server_config, config_actor, db_manager).await.expect("Failed to start server");
-
-    std::mem::forget(_guard);
+   std::mem::forget(_guard);
 }

@@ -1,13 +1,16 @@
-use postgres::{Config, NoTls, Transaction};
-use r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
+use std::time::Duration;
+use async_trait::async_trait;
+use sqlx::{ConnectOptions, PgPool, Postgres};
+use sqlx::pool::PoolConnection;
+use sqlx::postgres::{PgPoolOptions};
+
 use crate::db::manager::db_manager::DbManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
 #[derive(Clone)]
 pub struct PgManager {
-    pool: Option<Pool<PostgresConnectionManager<NoTls>>>,
+    pool: Option<PgPool>,
 }
 
 impl PgManager {
@@ -18,72 +21,47 @@ impl PgManager {
     }
 }
 
+#[async_trait]
 impl DbManager for PgManager {
-    type Pool = Pool<PostgresConnectionManager<NoTls>>;
-    type Connection = PooledConnection<PostgresConnectionManager<NoTls>>;
+    type Pool = PgPool;
+    type Connection = PoolConnection<Postgres>;
 
-    fn connect(&self, conn_str: &str) -> Result<Self, Error> {
-        let config = conn_str.parse::<Config>()
-            .map_err(|e| Error::Server(InternalServerError {
-                context: Some(e.to_string().into())
-            }))?;
-
-        let pool = Pool::new(PostgresConnectionManager::new(config, NoTls)).map_err(|e| {
-            Error::Server(InternalServerError {
-                context: Some(e.to_string().into())
-            })
-        })?;
+    async fn connect(&self, url: &str, timeout: Duration, max_connections: u32) -> Result<Self, Error> {
+        let pool = PgPoolOptions::new()
+            .acquire_timeout(timeout)
+            .max_connections(max_connections)
+            .connect(url)
+            .await
+            .map_err(|e| {
+                Error::Server(InternalServerError {
+                    context: Some(
+                        format!("Failed to connect to database: {}", e.to_string()).into()
+                    )
+                })
+            })?;
 
         Ok(Self {
             pool: Some(pool)
         })
     }
 
-    fn pool(&self) -> Result<Self::Pool, Error> {
+    async fn get_pool(&self) -> Result<Self::Pool, Error> {
         self.pool.clone().ok_or(Error::Server(InternalServerError {
-            context: Some("Pool is not initialized".into())
+            context: Some("Pool is not initialized".into()),
         }))
     }
 
-    fn connection(&self) -> Result<Self::Connection, Error> {
-        self.pool()?.get().map_err(|e| {
+    async fn get_connection(&self) -> Result<Self::Connection, Error> {
+        let pool = self.get_pool().await?;
+
+        let connection = pool.acquire().await.map_err(|e| {
             Error::Server(InternalServerError {
-                context: Some(e.to_string().into())
-            })
-        })
-    }
-
-    fn transact<R, F>(&self, f: F) -> Result<R, Error>
-        where
-            F: FnOnce(&mut Self::Connection) -> Result<R, Error>,
-    {
-        let mut conn = self.connection()?;
-
-        conn.execute("BEGIN", &[])
-            .map_err(|e| Error::Server(InternalServerError {
                 context: Some(
-                    format!("Failed to begin transaction: {}", e.to_string()).into()
+                    format!("Failed to acquire connection from pool: {}", e.to_string()).into()
                 )
-            }))?;
+            })
+        })?;
 
-        let result = f(&mut conn);
-
-        if result.is_ok() {
-            conn.execute("COMMIT", &[])
-                .map_err(|e| Error::Server(InternalServerError {
-                    context: Some(
-                        format!("Failed to commit transaction: {}", e.to_string()).into()
-                    )
-                }))?;
-        } else {
-            conn.execute("ROLLBACK", &[])
-                .map_err(|e| Error::Server(InternalServerError {
-                    context: Some(
-                        format!("Failed to rollback transaction: {}", e.to_string()).into()
-                    )
-                }))?;
-        }
-
-        result
+        Ok(connection)
     }
 }

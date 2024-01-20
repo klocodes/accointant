@@ -1,16 +1,12 @@
-/*use std::ops::Deref;
 use actix_web::{post, HttpResponse, Responder, web::Json};
 use actix_web::web::Data;
 use serde::Deserialize;
 use validator::Validate;
-use crate::db::manager::db_manager::DbManager;
-use crate::db::query_builder::QueryBuilder;
 
+use crate::bootstrap::app_context::AppContext;
+use crate::db::query_builder::QueryBuilder;
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;
-use crate::errors::server::ServerErrors;
-use crate::features::auth::application::command::register::{RegisterCommand};
-use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
 
 #[derive(Deserialize, Validate)]
 pub struct RequestData {
@@ -39,10 +35,15 @@ impl RequestData {
 }
 
 #[post("/register")]
-async fn register(data: Json<RequestData>, state: Data<dyn DbManager>) -> Result<impl Responder, Error> {
+async fn register(data: Json<RequestData>, state: Data<AppContext>) -> Result<impl Responder, Error>
+{
     if let Err(e) = data.validate() {
         return Err(Error::Client(ClientErrors::BadRequest { message: Some(e.to_string().into()) }));
     }
+
+    let app_context = state.as_ref().clone();
+
+    let query_builder = QueryBuilder::new(app_context);
 
    /* let db_manager = state.as_ref().clone();
     let query_builder = QueryBuilder::new(db_manager);
@@ -53,4 +54,4 @@ async fn register(data: Json<RequestData>, state: Data<dyn DbManager>) -> Result
 */
     Ok(HttpResponse::Ok())
 
-}*/
+}

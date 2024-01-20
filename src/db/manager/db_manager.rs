@@ -1,13 +1,17 @@
-use crate::errors::Error;
+use std::format;
+use std::time::Duration;
+use async_trait::async_trait;
 
+use crate::errors::Error;
+use crate::errors::server::ServerErrors::InternalServerError;
+
+#[async_trait]
 pub trait DbManager: Clone {
     type Pool;
     type Connection;
 
-    fn connect(&self, conn_str: &str) -> Result<Self, Error>;
-    fn pool(&self) -> Result<Self::Pool, Error>;
-    fn connection(&self) -> Result<Self::Connection, Error>;
-    fn transact<R, F>(&self, f: F) -> Result<R, Error>
-        where
-            F: FnOnce(&mut Self::Connection) -> Result<R, Error>;
+    async fn connect(&self, url: &str, timeout: Duration, max_connections: u32) -> Result<Self, Error>;
+
+    async fn get_pool(&self) -> Result<Self::Pool, Error>;
+    async fn get_connection(&self) -> Result<Self::Connection, Error>;
 }

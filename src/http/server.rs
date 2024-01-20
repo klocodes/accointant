@@ -1,23 +1,16 @@
-use std::sync::{Arc};
-use actix::Addr;
 use actix_web::{App, HttpServer, web};
 use actix_web::web::Data;
-use tokio::sync::Mutex;
-
-use crate::config::actor::ConfigActor;
+use crate::bootstrap::app_context::AppContext;
 use crate::config::server::ServerConfig;
-use crate::db::manager::db_manager::DbManager;
 use crate::http::handlers::auth;
 use crate::http::handlers::errors::not_found;
 
-pub async fn run<M>(server_config: &ServerConfig, config_actor: Addr<ConfigActor>, db_manager: M) -> std::io::Result<()>
-    where M: DbManager + 'static + Send,
+pub async fn run(server_config: &ServerConfig, app_context: AppContext) -> std::io::Result<()>
 {
     HttpServer::new(move || {
         App::new()
             //.wrap(ErrorHandling)
-            .app_data(Data::new(config_actor.clone()))
-            .app_data(Data::new(db_manager.clone()))
+            .app_data(Data::new(app_context.clone()))
             .default_service(web::route().to(not_found::handle))
             .configure(auth::config)
     }).bind((server_config.host(), server_config.port()))?
