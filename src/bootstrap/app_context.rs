@@ -1,5 +1,7 @@
 use tracing_appender::non_blocking::WorkerGuard;
+
 use crate::config::Config;
+use crate::db::db_transaction::PgTransaction;
 use crate::db::factory::DbManagerFactory;
 use crate::db::pg_manager::PgManager;
 use crate::errors::Error;
@@ -35,3 +37,5 @@ impl AppContext {
         &self.dm_manager
     }
 }
+
+pub type TransactionManager = PgTransaction<'static>;

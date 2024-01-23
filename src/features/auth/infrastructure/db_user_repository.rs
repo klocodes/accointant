@@ -1,9 +1,12 @@
 use async_trait::async_trait;
 use sqlx::{query, query_as, Row};
-use crate::bootstrap::app_context::AppContext;
+
+use crate::bootstrap::app_context::{AppContext, TransactionManager};
 use crate::db::db_manager::DbManager;
+use crate::db::db_transaction::DbTransaction;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors;
+use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
 use crate::features::auth::infrastructure::user_schema::UserSchema;
@@ -64,11 +67,10 @@ impl UserRepository for DbUserRepository {
     async fn create(&self, user: &User) -> Result<(), Error> {
         let user_schema = UserSchema::encode(user)?;
 
-        let q = "INSERT INTO users (id, name, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)";
+        let q = "INSERT INTO users (id, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)";
+        let res_query = query(q);
 
-        let res_query = query(q)
-            .bind(user_schema.id())
-            .bind(user_schema.name())
+        let res_query = res_query.bind(user_schema.id())
             .bind(user_schema.email())
             .bind(user_schema.password())
             .bind(user_schema.created_at())
@@ -76,10 +78,30 @@ impl UserRepository for DbUserRepository {
 
         let pool = self.app_context.get_db_manager().pool().await?;
 
-        res_query.execute(&pool).await
-            .map_err(|e| Error::Server(ServerErrors::InternalServerError {
-                context: Some(format!("Failed to create user: {}", e.to_string()).into())
-            }))?;
+        let mut transaction_manager = TransactionManager::new();
+
+        transaction_manager.begin(pool).await?;
+
+        let mut tx = transaction_manager.get().await?;
+
+        let res = res_query.execute(&mut **tx).await.map_err(|e| {
+            Error::Server(
+                InternalServerError {
+                    context: Some(
+                        format!("Failed to execute query: {}", e.to_string()).into()
+                    )
+                }
+            )
+        });
+
+        if res.is_err() {
+            transaction_manager.rollback().await?;
+
+            return Err(res.unwrap_err())
+        }
+
+
+        transaction_manager.commit().await?;
 
         Ok(())
     }
