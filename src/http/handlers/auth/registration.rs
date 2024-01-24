@@ -8,6 +8,7 @@ use crate::errors::Error;
 use crate::errors::client::ClientErrors;
 use crate::feature::auth::application::command::register::RegisterCommand;
 use crate::feature::auth::infrastructure::db_user_repository::DbUserRepository;
+use crate::service::templater::Templater;
 
 #[derive(Deserialize, Validate)]
 pub struct RequestData {
@@ -47,8 +48,10 @@ async fn register(data: Json<RequestData>, state: Data<AppContext>) -> Result<im
     let user_rep = DbUserRepository::new(app_context.clone());
     let transaction_manager = TransactionManager::new();
     let mailer = app_context.get_mailer().clone();
+    let template_name = "confirm_registration";
+    let templater = Templater::new(template_name, "html/mail/confirm_registration.hbs")?;
 
-    let _ = RegisterCommand::exec(transaction_manager, user_rep, mailer, data.into_inner()).await?;
+    let _ = RegisterCommand::exec(transaction_manager, user_rep, mailer, templater, template_name, data.into_inner()).await?;
 
     Ok(HttpResponse::Ok())
 
