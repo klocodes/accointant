@@ -1,0 +1,6 @@
+[mailer]
+host = "localhost"
+port = 2525
+username = "<your gmail address>"
+password = "<your gmail password>"
+from = "no-reply@metan.com"

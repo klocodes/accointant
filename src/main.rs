@@ -6,7 +6,7 @@ use crate::db::db_manager::DbManager;
 
 mod config;
 mod errors;
-mod features;
+mod feature;
 mod http;
 mod log;
 mod db;

@@ -8,11 +8,13 @@ pub mod db;
 pub mod general;
 pub mod server;
 pub mod log;
+pub mod mailer;
 
 const GENERAL_CONFIG_PATH: &str = "config/general.toml";
 const DB_CONFIG_PATH: &str = "config/db.toml";
 const SERVER_CONFIG_PATH: &str = "config/server.toml";
 const LOG_CONFIG_PATH: &str = "config/log.toml";
+const MAILER_CONFIG_PATH: &str = "config/mailer.toml";
 
 #[derive(Deserialize, Clone)]
 pub struct Config {
@@ -20,6 +22,7 @@ pub struct Config {
     db: db::DbConfig,
     server: server::ServerConfig,
     log: log::LogConfig,
+    mailer: mailer::MailerConfig,
 }
 
 impl Config {
@@ -33,13 +36,14 @@ impl Config {
         let db_config_path = format!("{}/{}", project_root, DB_CONFIG_PATH);
         let server_config_path = format!("{}/{}", project_root, SERVER_CONFIG_PATH);
         let log_config_path = format!("{}/{}", project_root, LOG_CONFIG_PATH);
-
+        let mailer_config_path = format!("{}/{}", project_root, MAILER_CONFIG_PATH);
 
         let builder = ConfigLoader::builder()
             .add_source(File::new(&general_config_path, FileFormat::Toml))
             .add_source(File::new(&db_config_path, FileFormat::Toml))
             .add_source(File::new(&server_config_path, FileFormat::Toml))
             .add_source(File::new(&log_config_path, FileFormat::Toml))
+            .add_source(File::new(&mailer_config_path, FileFormat::Toml))
             .add_source(Environment::default()
                             .try_parsing(true)
                             .separator("_"),
@@ -65,5 +69,9 @@ impl Config {
 
     pub fn log(&self) -> &log::LogConfig {
         &self.log
+    }
+
+    pub fn mailer(&self) -> &mailer::MailerConfig {
+        &self.mailer
     }
 }

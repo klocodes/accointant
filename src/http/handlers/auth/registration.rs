@@ -3,11 +3,11 @@ use actix_web::web::Data;
 use serde::Deserialize;
 use validator::Validate;
 
-use crate::bootstrap::app_context::AppContext;
+use crate::bootstrap::app_context::{AppContext, TransactionManager};
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;
-use crate::features::auth::application::command::register::RegisterCommand;
-use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
+use crate::feature::auth::application::command::register::RegisterCommand;
+use crate::feature::auth::infrastructure::db_user_repository::DbUserRepository;
 
 #[derive(Deserialize, Validate)]
 pub struct RequestData {
@@ -44,9 +44,11 @@ async fn register(data: Json<RequestData>, state: Data<AppContext>) -> Result<im
 
     let app_context = state.as_ref().clone();
 
-    let user_rep = DbUserRepository::new(app_context);
+    let user_rep = DbUserRepository::new(app_context.clone());
+    let transaction_manager = TransactionManager::new();
+    let mailer = app_context.get_mailer().clone();
 
-    let _ = RegisterCommand::exec(user_rep, data.into_inner()).await?;
+    let _ = RegisterCommand::exec(transaction_manager, user_rep, mailer, data.into_inner()).await?;
 
     Ok(HttpResponse::Ok())
 

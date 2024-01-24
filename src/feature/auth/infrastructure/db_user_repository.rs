@@ -7,9 +7,9 @@ use crate::db::db_transaction::DbTransaction;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors;
 use crate::errors::server::ServerErrors::InternalServerError;
-use crate::features::auth::domain::user::User;
-use crate::features::auth::domain::user_repository::UserRepository;
-use crate::features::auth::infrastructure::user_schema::UserSchema;
+use crate::feature::auth::domain::user::User;
+use crate::feature::auth::domain::user_repository::UserRepository;
+use crate::feature::auth::infrastructure::user_schema::UserSchema;
 use crate::service::data_mapper::DataMapper;
 
 pub struct DbUserRepository {
@@ -64,7 +64,7 @@ impl UserRepository for DbUserRepository {
     }
 
 
-    async fn create(&self, user: &User) -> Result<(), Error> {
+    async fn create(&self, transaction_manager: &mut TransactionManager, user: &User) -> Result<(), Error> {
         let user_schema = UserSchema::encode(user)?;
 
         let q = "INSERT INTO users (id, email, password, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)";
@@ -78,13 +78,11 @@ impl UserRepository for DbUserRepository {
 
         let pool = self.app_context.get_db_manager().pool().await?;
 
-        let mut transaction_manager = TransactionManager::new();
-
         transaction_manager.begin(pool).await?;
 
         let mut tx = transaction_manager.get().await?;
 
-        let res = res_query.execute(&mut **tx).await.map_err(|e| {
+        res_query.execute(&mut **tx).await.map_err(|e| {
             Error::Server(
                 InternalServerError {
                     context: Some(
@@ -92,16 +90,7 @@ impl UserRepository for DbUserRepository {
                     )
                 }
             )
-        });
-
-        if res.is_err() {
-            transaction_manager.rollback().await?;
-
-            return Err(res.unwrap_err())
-        }
-
-
-        transaction_manager.commit().await?;
+        })?;
 
         Ok(())
     }

@@ -1,16 +1,22 @@
+use crate::bootstrap::app_context::TransactionManager;
+use crate::db::db_transaction::DbTransaction;
 use crate::errors::client::ClientErrors;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors;
-use crate::features::auth::domain::user::User;
-use crate::features::auth::domain::email::Email;
-use crate::features::auth::domain::password::Password;
-use crate::features::auth::domain::user_repository::UserRepository;
+use crate::feature::auth::domain::user::User;
+use crate::feature::auth::domain::email::Email;
+use crate::feature::auth::domain::password::Password;
+use crate::feature::auth::domain::user_repository::UserRepository;
 use crate::http::handlers::auth::registration::RequestData;
+use crate::service::mailer::Mailer;
 
 pub struct RegisterCommand;
 
 impl RegisterCommand {
-    pub async fn exec(rep: impl UserRepository, request_data: RequestData) -> Result<(), Error> {
+    pub async fn exec<M>(mut transaction_manager: TransactionManager, rep: impl UserRepository, mailer: M, request_data: RequestData) -> Result<(), Error>
+        where
+            M: Mailer
+    {
         let email_exists: bool = rep.email_exists(request_data.email()).await?;
 
         if email_exists {
@@ -36,9 +42,19 @@ impl RegisterCommand {
             })
         })?;
 
-        let user = User::new(email, password.clone(), password)?;
+        let user = User::new(email.clone(), password.clone(), password)?;
 
-        rep.create(&user).await?;
+        let _ = rep.create(&mut transaction_manager, &user).await?;
+
+        let body = format!("Hello, {}! Your password is {}", user.email().value(), user.password().value());
+
+        let res = mailer.send(user.email().value().to_string(), "Confirmation email".to_string(), body).await;
+
+        if let Err(e) = res {
+            return Err(e);
+        }
+
+        transaction_manager.commit().await?;
 
         Ok(())
     }

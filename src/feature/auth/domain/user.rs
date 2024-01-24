@@ -3,9 +3,9 @@ use chrono;
 use serde::{Deserialize, Serialize};
 use crate::errors::Error;
 
-use crate::features::auth::domain::token::Token;
-use crate::features::auth::domain::email::Email;
-use crate::features::auth::domain::password::Password;
+use crate::feature::auth::domain::token::Token;
+use crate::feature::auth::domain::email::Email;
+use crate::feature::auth::domain::password::Password;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
