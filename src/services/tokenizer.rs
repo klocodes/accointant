@@ -1,4 +1,4 @@
-use rand::distributions::Alphanumeric;
+use rand::distributions::{Alphanumeric, Uniform};
 use rand::Rng;
 use regex::Regex;
 
@@ -6,8 +6,9 @@ use crate::errors::client::ClientErrors::DomainError;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
-const EXPIRATION: i64 = 24;
 const LENGTH: usize = 32;
+const SYMBOLS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:',.<>/?";
+
 
 pub struct Tokenizer;
 
@@ -17,10 +18,12 @@ impl Tokenizer {
     }
 
     pub fn generate(&self) -> Result<String, Error> {
-        let value = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
+        let rng = rand::thread_rng();
+        let symbols = Uniform::new_inclusive(0, SYMBOLS.chars().count() - 1);
+        let value: String = rng
+            .sample_iter(symbols)
             .take(LENGTH)
-            .map(char::from)
+            .map(|i| SYMBOLS.chars().nth(i).unwrap())
             .collect();
 
         Ok(value)

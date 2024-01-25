@@ -3,7 +3,7 @@ use chrono;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::errors::client::ClientErrors::BadRequest;
+use crate::errors::client::ClientErrors::{BadRequest, DomainError};
 use crate::errors::Error;
 use crate::features::auth::domain::confirmation_token::ConfirmationToken;
 use crate::features::auth::domain::email::Email;
@@ -59,7 +59,37 @@ impl User {
         )
     }
 
-    pub async fn confirm(&mut self) -> Result<(), Error> {
+    pub async fn confirm(&mut self, token: String) -> Result<(), Error> {
+        if token != self.confirmation_token.value() {
+            return Err(
+                Error::Client(
+                    DomainError {
+                        message: "Confirmation token is invalid".into()
+                    }
+                )
+            );
+        }
+
+        if self.confirmation_token.has_expired() {
+            return Err(
+                Error::Client(
+                    DomainError {
+                        message: "Confirmation token has expired".into()
+                    }
+                )
+            );
+        }
+
+        if self.confirmed_at.is_some() {
+            return Err(
+                Error::Client(
+                    DomainError {
+                        message: "Email already confirmed".into()
+                    }
+                )
+            );
+        }
+
         self.confirmed_at = Some(chrono::Utc::now());
 
         Ok(())
