@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 const EXPIRATION_HOURS: i64 = 24;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConfirmationToken {
     #[serde(rename = "confirmation_token")]
     value: String,
@@ -22,6 +22,10 @@ impl ConfirmationToken {
 
     pub fn value(&self) -> &str {
         &self.value
+    }
+
+    pub fn expires_at(&self) -> &DateTime<Utc> {
+        &self.expires_at
     }
 
     pub fn has_expired(&self) -> bool {

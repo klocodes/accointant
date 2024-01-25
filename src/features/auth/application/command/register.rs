@@ -52,17 +52,13 @@ impl RegisterCommand {
         );
         body_data.insert("url", url);
 
-
-        let body = templater.render(template_name, body_data)
-            .map_err(|e| {
-                Error::Server(ServerErrors::InternalServerError {
-                    context: Some(format!("Failed to render template: {}", e.to_string()).into())
-                })
-            })?;
+        let body = templater.render(template_name, body_data)?;
 
         let res = mailer.send(user.email().value().to_string(), "Confirmation email".to_string(), body).await;
 
         if let Err(e) = res {
+            transaction_manager.rollback().await?;
+
             return Err(e);
         }
 

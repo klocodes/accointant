@@ -28,7 +28,7 @@ impl ConfirmCommand {
 
         user.confirm(token.to_string()).await?;
 
-        rep.confirm_email(user.id().clone()).await?;
+        rep.confirm_email(user).await?;
 
         Ok(())
     }

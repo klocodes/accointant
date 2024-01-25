@@ -10,7 +10,7 @@ use crate::features::auth::domain::email::Email;
 use crate::features::auth::domain::password::Password;
 use crate::services::tokenizer::Tokenizer;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     id: Uuid,
 
@@ -59,6 +59,33 @@ impl User {
         )
     }
 
+    pub async fn request_confirmation(&mut self, token: String) -> Result<(), Error> {
+        if self.confirmed_at.is_some() {
+            return Err(
+                Error::Client(
+                    DomainError {
+                        message: "Email already confirmed".into()
+                    }
+                )
+            );
+        }
+
+        if !self.confirmation_token.has_expired() {
+            return Err(
+                Error::Client(
+                    DomainError {
+                        message: "Confirmation token has not expired yet".into()
+                    }
+                )
+            );
+        }
+
+        self.confirmation_token = ConfirmationToken::new(token);
+        self.updated_at = chrono::Utc::now();
+
+        Ok(())
+    }
+
     pub async fn confirm(&mut self, token: String) -> Result<(), Error> {
         if token != self.confirmation_token.value() {
             return Err(
@@ -91,6 +118,7 @@ impl User {
         }
 
         self.confirmed_at = Some(chrono::Utc::now());
+        self.updated_at = chrono::Utc::now();
 
         Ok(())
     }
@@ -109,6 +137,10 @@ impl User {
 
     pub fn registered_at(&self) -> &chrono::DateTime<chrono::Utc> {
         &self.registered_at
+    }
+
+    pub fn updated_at(&self) -> &chrono::DateTime<chrono::Utc> {
+        &self.updated_at
     }
 
     pub fn confirmation_token(&self) -> &ConfirmationToken {

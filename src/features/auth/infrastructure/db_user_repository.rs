@@ -25,6 +25,27 @@ impl DbUserRepository {
 
 #[async_trait]
 impl UserRepository for DbUserRepository {
+    async fn find_by_id(&self, user_id: Uuid) -> Result<Option<User>, Error> {
+        let q = "SELECT * FROM users WHERE id = $1";
+
+        let res_query = query_as::<_, UserSchema>(q).bind(user_id);
+
+        let pool = self.app_context.get_db_manager().pool().await?;
+
+        let user_schema_option = res_query.fetch_optional(&pool).await
+            .map_err(|e| Error::Server(InternalServerError {
+                context: Some(format!("Failed to fetch user by id: {}", e.to_string()).into())
+            }))?;
+
+        match user_schema_option {
+            Some(user_schema) => {
+                let user = UserSchema::decode(&user_schema);
+                Ok(Some(user?))
+            }
+            None => Ok(None),
+        }
+    }
+
     async fn find_by_email(&self, email: String) -> Result<Option<User>, Error> {
         let q = "SELECT * FROM users WHERE email = $1";
 
@@ -98,16 +119,13 @@ impl UserRepository for DbUserRepository {
         Ok(())
     }
 
-    async fn confirm_email(&self, id: Uuid) -> Result<(), Error> {
-        let confirmed_at = chrono::Utc::now();
-
+    async fn confirm_email(&self, user: User) -> Result<(), Error> {
         let q = "UPDATE users SET confirmed_at = $1, updated_at = $2 WHERE id = $3";
 
-        let mut res_query = query(q);
-
-        res_query = res_query.bind(confirmed_at)
-            .bind(confirmed_at)
-            .bind(id);
+        let res_query = query(q)
+            .bind(user.confirmed_at())
+            .bind(user.updated_at())
+            .bind(user.id());
 
         let pool = self.app_context.get_db_manager().pool().await?;
 
@@ -116,6 +134,33 @@ impl UserRepository for DbUserRepository {
                 InternalServerError {
                     context: Some(
                         format!("Failed to execute query to confirm email: {}", e.to_string()).into()
+                    )
+                }
+            )
+        })?;
+
+        Ok(())
+    }
+
+    async fn update_confirmation_token(&self, transaction_manager: &mut TransactionManager, user: User) -> Result<(), Error> {
+        let q = "UPDATE users SET confirmation_token = $1, confirmation_token_expires_at = $2, updated_at = $3 WHERE id = $4";
+        let mut res_query = query(q)
+            .bind(user.confirmation_token().value())
+            .bind(user.confirmation_token().expires_at())
+            .bind(user.updated_at())
+            .bind(user.id());
+
+        let pool = self.app_context.get_db_manager().pool().await?;
+
+        transaction_manager.begin(pool).await?;
+
+        let tx = transaction_manager.get().await?;
+
+        res_query.execute(&mut **tx).await.map_err(|e| {
+            Error::Server(
+                InternalServerError {
+                    context: Some(
+                        format!("Failed to execute query to register user: {}", e.to_string()).into()
                     )
                 }
             )
