@@ -3,7 +3,7 @@ use actix_web::web::{Data, Path};
 use serde::Deserialize;
 use crate::bootstrap::app_context::{AppContext, TransactionManager};
 use crate::errors::Error;
-use crate::features::auth::application::command::request_confirmation_token::RequestCommand;
+use crate::features::auth::application::request_confirmation_token::RequestConfirmationToken;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
 use crate::services::templater::Templater;
 use crate::services::tokenizer::Tokenizer;
@@ -23,7 +23,7 @@ async fn request(user_id: Path<UserId>, state: Data<AppContext>) -> Result<impl 
     let template_name = "confirm_registration";
     let templater = Templater::new(template_name, "html/mail/confirm_registration.hbs")?;
 
-    let _ = RequestCommand::exec(
+    let _ = RequestConfirmationToken::exec(
         transaction_manager,
         user_rep,
         tokenizer,

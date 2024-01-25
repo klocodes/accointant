@@ -3,20 +3,22 @@ use crate::bootstrap::app_context::TransactionManager;
 use crate::db::db_transaction::DbTransaction;
 use crate::errors::client::ClientErrors;
 use crate::errors::Error;
-use crate::errors::server::ServerErrors;
+use crate::features::auth::application::dto::user_data::UserData;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
 use crate::http::handlers::auth::registration::RequestData;
+use crate::services::hasher::Hasher;
 use crate::services::mailer::Mailer;
 use crate::services::templater::Templater;
 use crate::services::tokenizer::Tokenizer;
 
-pub struct RegisterCommand;
+pub struct RegisterUser;
 
-impl RegisterCommand {
+impl RegisterUser {
     pub async fn exec<M>(
         mut transaction_manager: TransactionManager,
         rep: impl UserRepository,
+        hasher: impl Hasher,
         tokenizer: Tokenizer,
         mailer: M,
         templater: Templater<'_>,
@@ -38,17 +40,20 @@ impl RegisterCommand {
             }));
         }
 
-        let email = request_data.email().to_string();
-        let password = request_data.password().to_string();
-        let confirmation_token = tokenizer.generate()?;
-
-        let user = User::register(email.clone(), password.clone(), password, confirmation_token.clone())?;
+        let user_data = UserData::new(
+            request_data.email().to_string(),
+            request_data.password().to_string(),
+            request_data.password_confirmation().to_string(),
+            hasher.hash(request_data.password().to_string())?,
+            tokenizer.generate()?,
+        );
+        let user = User::register(user_data.clone())?;
 
         let _ = rep.create(&mut transaction_manager, &user).await?;
 
         let mut body_data = HashMap::new();
         let url = format!(
-            "http://localhost:8080/auth/confirm?email={}&token={}", email, confirmation_token
+            "http://localhost:8080/auth/confirm?email={}&token={}", user_data.email(), user_data.confirmation_token()
         );
         body_data.insert("url", url);
 

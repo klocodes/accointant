@@ -33,3 +33,21 @@ impl Email {
         &self.value
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_valid_email() {
+        let valid_email = String::from("test@example.com");
+        let email = Email::new(valid_email.clone()).unwrap();
+        assert_eq!(email.value(), valid_email.as_str());
+    }
+
+    #[test]
+    fn test_invalid_email() {
+        let invalid_email = String::from("invalid_email");
+        assert!(Email::new(invalid_email).is_err());
+    }
+}

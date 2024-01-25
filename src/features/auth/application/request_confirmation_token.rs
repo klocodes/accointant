@@ -11,9 +11,9 @@ use crate::services::mailer::Mailer;
 use crate::services::templater::Templater;
 use crate::services::tokenizer::Tokenizer;
 
-pub struct RequestCommand;
+pub struct RequestConfirmationToken;
 
-impl RequestCommand {
+impl RequestConfirmationToken {
     pub async fn exec<M>(
         mut transaction_manager: TransactionManager,
         rep: impl UserRepository,

@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::bootstrap::app_context::AppContext;
 use crate::errors::Error;
-use crate::features::auth::application::command::confirm::ConfirmCommand;
+use crate::features::auth::application::confirm::ConfirmRegistration;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
 use crate::services::tokenizer::Tokenizer;
 
@@ -31,7 +31,7 @@ async fn confirm(request_data: Query<RequestData>, state: Data<AppContext>) -> R
     let rep = DbUserRepository::new(app_context.clone());
     let tokenizer = Tokenizer::new();
 
-    let _ = ConfirmCommand::exec(rep, tokenizer, request_data.into_inner()).await?;
+    let _ = ConfirmRegistration::exec(rep, tokenizer, request_data.into_inner()).await?;
 
     Ok(HttpResponse::Ok())
 }

@@ -5,10 +5,10 @@ use uuid::Uuid;
 
 use crate::errors::client::ClientErrors::{BadRequest, DomainError};
 use crate::errors::Error;
+use crate::features::auth::application::dto::user_data::UserData;
 use crate::features::auth::domain::confirmation_token::ConfirmationToken;
 use crate::features::auth::domain::email::Email;
 use crate::features::auth::domain::password::Password;
-use crate::services::tokenizer::Tokenizer;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
@@ -31,8 +31,8 @@ pub struct User {
 }
 
 impl User {
-    pub fn register(email: String, password: String, password_confirmation: String, confirmation_token: String) -> Result<Self, Error> {
-        if password != password_confirmation {
+    pub fn register(data: UserData) -> Result<Self, Error> {
+        if data.password() != data.password_confirmation() {
             return Err(
                 Error::Client(
                     BadRequest {
@@ -42,9 +42,9 @@ impl User {
             );
         }
 
-        let email = Email::new(email)?;
-        let password = Password::new(password)?;
-        let confirmation_token = ConfirmationToken::new(confirmation_token);
+        let email = Email::new(data.email().to_string())?;
+        let password = Password::new(data.password().to_string(), data.hashed_password().to_string())?;
+        let confirmation_token = ConfirmationToken::new(data.confirmation_token().to_string());
 
         Ok(
             Self {

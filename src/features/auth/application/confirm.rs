@@ -5,9 +5,9 @@ use crate::features::auth::domain::user_repository::UserRepository;
 use crate::http::handlers::auth::confirm_registration::RequestData;
 use crate::services::tokenizer::Tokenizer;
 
-pub struct ConfirmCommand;
+pub struct ConfirmRegistration;
 
-impl ConfirmCommand {
+impl ConfirmRegistration {
     pub async fn exec(rep: impl UserRepository, tokenizer: Tokenizer, data: RequestData) -> Result<(), Error> {
         let email = data.email().to_string();
 
