@@ -14,6 +14,7 @@ impl ResponseError for Error {
             Error::Client(client_errors) => {
                 match client_errors {
                     ClientErrors::BadRequest { .. } => StatusCode::BAD_REQUEST,
+                    ClientErrors::DomainError { .. } => StatusCode::UNPROCESSABLE_ENTITY,
                     ClientErrors::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
                     ClientErrors::PaymentRequired { .. } => StatusCode::PAYMENT_REQUIRED,
                     ClientErrors::NotFound { .. } => StatusCode::NOT_FOUND,

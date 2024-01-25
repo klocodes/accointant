@@ -7,10 +7,10 @@ use crate::db::db_transaction::DbTransaction;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors;
 use crate::errors::server::ServerErrors::InternalServerError;
-use crate::feature::auth::domain::user::User;
-use crate::feature::auth::domain::user_repository::UserRepository;
-use crate::feature::auth::infrastructure::user_schema::UserSchema;
-use crate::service::data_mapper::DataMapper;
+use crate::features::auth::domain::user::User;
+use crate::features::auth::domain::user_repository::UserRepository;
+use crate::features::auth::infrastructure::user_schema::UserSchema;
+use crate::services::data_mapper::DataMapper;
 
 pub struct DbUserRepository {
     app_context: AppContext,
@@ -92,6 +92,10 @@ impl UserRepository for DbUserRepository {
             )
         })?;
 
+        Ok(())
+    }
+
+    async fn persist(&self, user: &User) -> Result<(), Error> {
         Ok(())
     }
 }

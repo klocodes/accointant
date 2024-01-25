@@ -32,3 +32,5 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "chrono"] }
 uuid = { version = "1.7", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 validator = { version = "0.16", features = ["derive"] }
 handlebars = "5.1.1"
+regex = "1.10.2"
+rand = "0.8.5"

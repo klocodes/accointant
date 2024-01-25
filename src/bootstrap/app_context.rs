@@ -6,7 +6,7 @@ use crate::db::db_transaction::PgTransaction;
 use crate::db::factory::DbManagerFactory;
 use crate::db::pg_manager::PgManager;
 use crate::errors::Error;
-use crate::service::mailer::{LettreMailer, Mailer};
+use crate::services::mailer::{LettreMailer, Mailer};
 
 #[derive(Clone)]
 pub struct AppContext {

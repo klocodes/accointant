@@ -1,16 +1,16 @@
 use actix::Actor;
 use crate::bootstrap::app_context::AppContext;
 
-use crate::service::data_mapper::DataMapper;
+use crate::services::data_mapper::DataMapper;
 use crate::db::db_manager::DbManager;
 
 mod config;
 mod errors;
-mod feature;
+mod features;
 mod http;
 mod log;
 mod db;
-mod service;
+mod services;
 mod bootstrap;
 
 

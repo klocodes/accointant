@@ -88,7 +88,7 @@ impl Mailer for LettreMailer {
                 )
             })?
             .port(self.port)
-            .tls(Tls::None) // Указываем, что TLS не используется
+            .tls(Tls::None)
             .build();
 
         // Отправьте письмо

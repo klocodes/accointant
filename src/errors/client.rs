@@ -6,6 +6,9 @@ pub enum ClientErrors {
     #[error("{message:?}")]
     BadRequest { message: Option<Value> },
 
+    #[error("{message:?}")]
+    DomainError { message: Value },
+
     #[error("Unauthorized: The request has not been applied because it lacks valid authentication credentials for the target resource. {context:?}")]
     Unauthorized { context: Option<Value> },
 

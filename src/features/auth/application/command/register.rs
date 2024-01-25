@@ -4,18 +4,25 @@ use crate::db::db_transaction::DbTransaction;
 use crate::errors::client::ClientErrors;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors;
-use crate::feature::auth::domain::user::User;
-use crate::feature::auth::domain::email::Email;
-use crate::feature::auth::domain::password::Password;
-use crate::feature::auth::domain::user_repository::UserRepository;
+use crate::features::auth::domain::user::User;
+use crate::features::auth::domain::user_repository::UserRepository;
 use crate::http::handlers::auth::registration::RequestData;
-use crate::service::mailer::Mailer;
-use crate::service::templater::Templater;
+use crate::services::mailer::Mailer;
+use crate::services::templater::Templater;
+use crate::services::tokenizer::Tokenizer;
 
 pub struct RegisterCommand;
 
 impl RegisterCommand {
-    pub async fn exec<M>(mut transaction_manager: TransactionManager, rep: impl UserRepository, mailer: M, templater: Templater<'_>, template_name: &str, request_data: RequestData) -> Result<(), Error>
+    pub async fn exec<M>(
+        mut transaction_manager: TransactionManager,
+        rep: impl UserRepository,
+        tokenizer: Tokenizer,
+        mailer: M,
+        templater: Templater<'_>,
+        template_name: &str,
+        request_data: RequestData,
+    ) -> Result<(), Error>
         where
             M: Mailer
     {
@@ -31,24 +38,20 @@ impl RegisterCommand {
             }));
         }
 
-        let email = Email::new(request_data.email()).map_err(|e| {
-            Error::Server(ServerErrors::InternalServerError {
-                context: Some(format!("Failed to create email: {}", e.to_string()).into())
-            })
-        })?;
+        let email = request_data.email().to_string();
+        let password = request_data.password().to_string();
+        let confirmation_token = tokenizer.generate()?;
 
-        let password = Password::new(request_data.password()).map_err(|e| {
-            Error::Server(ServerErrors::InternalServerError {
-                context: Some(format!("Failed to create password: {}", e.to_string()).into())
-            })
-        })?;
-
-        let user = User::new(email.clone(), password.clone(), password)?;
+        let user = User::register(email.clone(), password.clone(), password, confirmation_token.clone())?;
 
         let _ = rep.create(&mut transaction_manager, &user).await?;
 
         let mut body_data = HashMap::new();
-        body_data.insert("url", format!("http://localhost:8080/auth/confirm?email={}", email.clone().value()));
+        let url = format!(
+            "http://localhost:8080/auth/confirm?email={}&token={}", email, confirmation_token
+        );
+        body_data.insert("url", url);
+
 
         let body = templater.render(template_name, body_data)
             .map_err(|e| {

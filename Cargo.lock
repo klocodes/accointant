@@ -1578,6 +1578,8 @@ dependencies = [
  "lettre_email",
  "log",
  "prometheus",
+ "rand 0.8.5",
+ "regex",
  "serde",
  "serde_cbor",
  "serde_json",

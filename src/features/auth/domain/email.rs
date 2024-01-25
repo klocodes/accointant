@@ -11,9 +11,9 @@ pub struct Email {
 }
 
 impl Email {
-    pub fn new(email: &str) -> Result<Self, Error> {
+    pub fn new(email: String) -> Result<Self, Error> {
         let email = Self {
-            value: email.to_string()
+            value: email
         };
 
         if let Err(e) = email.validate() {

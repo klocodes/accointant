@@ -1,14 +1,15 @@
-use actix_web::{post, HttpResponse, Responder, web::Json};
-use actix_web::web::Data;
+use actix_web::{post, HttpResponse, Responder};
+use actix_web::web::{Data, Json};
 use serde::Deserialize;
 use validator::Validate;
 
 use crate::bootstrap::app_context::{AppContext, TransactionManager};
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;
-use crate::feature::auth::application::command::register::RegisterCommand;
-use crate::feature::auth::infrastructure::db_user_repository::DbUserRepository;
-use crate::service::templater::Templater;
+use crate::features::auth::application::command::register::RegisterCommand;
+use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
+use crate::services::templater::Templater;
+use crate::services::tokenizer::Tokenizer;
 
 #[derive(Deserialize, Validate)]
 pub struct RequestData {
@@ -47,12 +48,22 @@ async fn register(data: Json<RequestData>, state: Data<AppContext>) -> Result<im
 
     let user_rep = DbUserRepository::new(app_context.clone());
     let transaction_manager = TransactionManager::new();
+
+    let tokenizer = Tokenizer::new();
+
     let mailer = app_context.get_mailer().clone();
     let template_name = "confirm_registration";
     let templater = Templater::new(template_name, "html/mail/confirm_registration.hbs")?;
 
-    let _ = RegisterCommand::exec(transaction_manager, user_rep, mailer, templater, template_name, data.into_inner()).await?;
+    let _ = RegisterCommand::exec(
+        transaction_manager,
+        user_rep,
+        tokenizer,
+        mailer,
+        templater,
+        template_name,
+        data.into_inner(),
+    ).await?;
 
     Ok(HttpResponse::Ok())
-
 }

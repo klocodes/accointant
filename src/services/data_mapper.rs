@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::errors::Error;
-use crate::service::serializer::{Serialization, Serializer};
+use crate::services::serializer::{Serialization, Serializer};
 
 pub trait DataMapper
     where
