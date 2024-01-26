@@ -29,7 +29,7 @@ impl RequestData {
 async fn confirm(request_data: Query<RequestData>, state: Data<(AppContext, ServiceContainer)>) -> Result<impl Responder, Error> {
     let (app_context, service_container) = state.as_ref().clone();
 
-    let rep = DbUserRepository::new(app_context.clone());
+    let rep = DbUserRepository::new(app_context.clone(), service_container.serializer());
     let tokenizer = service_container.tokenizer();
 
     let _ = ConfirmRegistration::exec(rep, tokenizer, request_data.into_inner()).await?;

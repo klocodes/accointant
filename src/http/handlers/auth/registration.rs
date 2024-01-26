@@ -48,7 +48,7 @@ async fn register(data: Json<RequestData>, state: Data<(AppContext, ServiceConta
 
     let (app_context, service_container)  = state.as_ref().clone();
 
-    let user_rep = DbUserRepository::new(app_context.clone());
+    let user_rep = DbUserRepository::new(app_context.clone(), service_container.serializer());
     let transaction_manager = TransactionManager::new();
 
     let tokenizer = service_container.tokenizer();

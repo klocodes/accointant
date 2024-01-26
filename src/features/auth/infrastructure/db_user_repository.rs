@@ -6,25 +6,29 @@ use crate::bootstrap::app_context::{AppContext, TransactionManager};
 use crate::db::db_manager::DbManager;
 use crate::db::db_transaction::DbTransaction;
 use crate::errors::Error;
-use crate::errors::server::ServerErrors;
 use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
 use crate::features::auth::infrastructure::user_schema::UserSchema;
 use crate::services::data_mapper::DataMapper;
+use crate::services::serializer::Serializer;
 
-pub struct DbUserRepository {
+pub struct DbUserRepository<S: Serializer> {
     app_context: AppContext,
+    serializer: S,
 }
 
-impl DbUserRepository {
-    pub fn new(app_context: AppContext) -> Self {
-        Self { app_context }
+impl<S: Serializer> DbUserRepository<S> {
+    pub fn new(app_context: AppContext, serializer: S) -> Self {
+        Self {
+            app_context,
+            serializer
+        }
     }
 }
 
 #[async_trait]
-impl UserRepository for DbUserRepository {
+impl<S: Serializer> UserRepository for DbUserRepository<S> {
     async fn find_by_id(&self, user_id: Uuid) -> Result<Option<User>, Error> {
         let q = "SELECT * FROM users WHERE id = $1";
 
@@ -39,7 +43,7 @@ impl UserRepository for DbUserRepository {
 
         match user_schema_option {
             Some(user_schema) => {
-                let user = UserSchema::decode(&user_schema);
+                let user = UserSchema::decode(self.serializer.clone(), &user_schema);
                 Ok(Some(user?))
             }
             None => Ok(None),
@@ -60,7 +64,7 @@ impl UserRepository for DbUserRepository {
 
         match user_schema_option {
             Some(user_schema) => {
-                let user = UserSchema::decode(&user_schema);
+                let user = UserSchema::decode(self.serializer.clone(), &user_schema);
                 Ok(Some(user?))
             }
             None => Ok(None),
@@ -87,7 +91,7 @@ impl UserRepository for DbUserRepository {
 
 
     async fn create(&self, transaction_manager: &mut TransactionManager, user: &User) -> Result<(), Error> {
-        let user_schema = UserSchema::encode(user)?;
+        let user_schema = UserSchema::encode(self.serializer.clone(), user)?;
 
         let q = "INSERT INTO users (id, email, password, confirmation_token, confirmation_token_expires_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)";
         let res_query = query(q);

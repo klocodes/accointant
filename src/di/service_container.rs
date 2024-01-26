@@ -2,6 +2,7 @@ use crate::config::manager::ConfigManager;
 use crate::errors::Error;
 use crate::services::hasher::{BcryptHasher, Hasher};
 use crate::services::mailer::{LettreMailer, Mailer};
+use crate::services::serializer::{CborSerializer, Serializer};
 use crate::services::templater::{HandlebarsTemplater, Templater};
 use crate::services::tokenizer::{SymbolsTokenizer, Tokenizer};
 
@@ -25,6 +26,10 @@ impl ServiceContainer {
 
     pub fn mailer(&self) -> Result<impl Mailer, Error> {
         LettreMailer::new(self.config.mailer())
+    }
+
+    pub fn serializer(&self) -> impl Serializer {
+        CborSerializer::new()
     }
 
     pub fn templater(&self) -> Result<impl Templater, Error> {

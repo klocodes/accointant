@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::errors::Error;
-use crate::services::serializer::{Serialization, Serializer};
+use crate::services::serializer::{Serializer};
 
 pub trait DataMapper
     where
@@ -10,19 +10,19 @@ pub trait DataMapper
     type Schema;
     type Entity;
 
-    fn encode(entity: &Self::Entity) -> Result<Self::Schema, Error>
+    fn encode<S: Serializer>(serializer: S, entity: &Self::Entity) -> Result<Self::Schema, Error>
     {
-        let entity = Serializer::serialize(&entity)?;
+        let entity = serializer.serialize(&entity)?;
 
-        let schema: Self::Schema = Serializer::deserialize(&entity)?;
+        let schema: Self::Schema = serializer.deserialize(&entity)?;
 
         Ok(schema)
     }
 
-    fn decode(schema: &Self::Schema) -> Result<Self::Entity, Error> {
-        let schema = Serializer::serialize(schema)?;
+    fn decode<S: Serializer>(serializer: S, schema: &Self::Schema) -> Result<Self::Entity, Error> {
+        let schema = serializer.serialize(schema)?;
 
-        let entity: Self::Entity = Serializer::deserialize(&schema)?;
+        let entity: Self::Entity = serializer.deserialize(&schema)?;
 
         Ok(entity)
     }

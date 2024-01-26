@@ -16,7 +16,7 @@ pub struct UserId(String);
 async fn request(user_id: Path<UserId>, state: Data<(AppContext, ServiceContainer)>) -> Result<impl Responder, Error> {
     let (app_context, service_container) = state.get_ref().clone();
 
-    let user_rep = DbUserRepository::new(app_context.clone());
+    let user_rep = DbUserRepository::new(app_context.clone(), service_container.serializer());
     let transaction_manager = TransactionManager::new();
 
     let tokenizer = service_container.tokenizer();
