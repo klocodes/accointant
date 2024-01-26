@@ -7,7 +7,7 @@ use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
 const LENGTH: usize = 32;
-const SYMBOLS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:',.<>/?";
+const SYMBOLS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 pub trait Tokenizer {
     fn generate(&self) -> Result<String, Error>;
@@ -60,19 +60,10 @@ impl Tokenizer for SymbolsTokenizer {
                     }
                 )
             )?;
-        let has_special = Regex::new(r"[^A-Za-z0-9]")
-            .map_err(|e|
-                Error::Server(
-                    InternalServerError {
-                        context: Some(format!("Failed to validate confirmation token: {}", e.to_string()).into())
-                    }
-                )
-            )?;
 
         if !has_uppercase.is_match(value) ||
             !has_lowercase.is_match(value) ||
             !has_number.is_match(value) ||
-            !has_special.is_match(value) ||
             value.len() < LENGTH
         {
             return Err(

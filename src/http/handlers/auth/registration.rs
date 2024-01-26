@@ -57,8 +57,9 @@ async fn register(data: Json<RequestData>, state: Data<ServiceContainer>) -> Res
 
     let mailer = service_container.mailer()?;
     let mailer_template_name = "confirm_registration";
+
     let mut templater = service_container.templater()?;
-    templater.register(mailer_template_name, "confirm_registration.hbs")?;
+    templater.register(mailer_template_name, "mail/confirm_registration.hbs")?;
 
     let _ = RegisterUser::exec(
         transaction_container,

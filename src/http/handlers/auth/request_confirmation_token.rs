@@ -26,7 +26,7 @@ async fn request(user_id: Path<UserId>, state: Data<ServiceContainer>) -> Result
     let mailer_template_name = "confirm_registration";
 
     let mut templater = service_container.templater()?;
-    templater.register(mailer_template_name, "confirm_registration.hbs")?;
+    templater.register(mailer_template_name, "mail/confirm_registration.hbs")?;
 
     let _ = RequestConfirmationToken::exec(
         transaction_container,
