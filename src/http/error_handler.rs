@@ -1,12 +1,28 @@
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError, Error as ActixError};
-use actix_web::dev::ServiceResponse;
 
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;
 use crate::errors::network::NetworkErrors;
 use crate::errors::server::ServerErrors;
 use crate::{log_error, log_trace};
+
+/*pub struct ErrorHandler;
+
+impl ErrorHandler {
+    pub fn from_status(actix_error: &ActixError) -> Error {
+        let status_code= actix_error.as_response_error().status_code();
+        let error = match status_code {
+            StatusCode::NOT_FOUND => Error::Client(ClientErrors::NotFound { context: None }),
+            StatusCode::FORBIDDEN => Error::Server(ServerErrors::Forbidden { context: None }),
+            StatusCode::METHOD_NOT_ALLOWED => Error::Network(NetworkErrors::MethodNotAllowed { context: None }),
+            StatusCode::INTERNAL_SERVER_ERROR => Error::Server(ServerErrors::InternalServerError { context: None }),
+            _ => Error::Server(ServerErrors::InternalServerError { context: None })
+        };
+
+        error
+    }
+}*/
 
 impl ResponseError for Error {
     fn status_code(&self) -> StatusCode {
@@ -77,17 +93,4 @@ impl ResponseError for Error {
                 "error": error_message
             }))
     }
-}
-
-pub fn from_status(actix_error: &ActixError) -> Error {
-    let status_code= actix_error.as_response_error().status_code();
-    let error = match status_code {
-        StatusCode::NOT_FOUND => Error::Client(ClientErrors::NotFound { context: None }),
-        StatusCode::FORBIDDEN => Error::Server(ServerErrors::Forbidden { context: None }),
-        StatusCode::METHOD_NOT_ALLOWED => Error::Network(NetworkErrors::MethodNotAllowed { context: None }),
-        StatusCode::INTERNAL_SERVER_ERROR => Error::Server(ServerErrors::InternalServerError { context: None }),
-        _ => Error::Server(ServerErrors::InternalServerError { context: None })
-    };
-
-    error
 }

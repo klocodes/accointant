@@ -3,6 +3,7 @@ use actix_web::web::{Data, Query};
 use serde::Deserialize;
 
 use crate::bootstrap::app_context::AppContext;
+use crate::di::service_container::ServiceContainer;
 use crate::errors::Error;
 use crate::features::auth::application::confirm::ConfirmRegistration;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
@@ -25,11 +26,11 @@ impl RequestData {
 }
 
 #[get("/confirm")]
-async fn confirm(request_data: Query<RequestData>, state: Data<AppContext>) -> Result<impl Responder, Error> {
-    let app_context = state.as_ref().clone();
+async fn confirm(request_data: Query<RequestData>, state: Data<(AppContext, ServiceContainer)>) -> Result<impl Responder, Error> {
+    let (app_context, service_container) = state.as_ref().clone();
 
     let rep = DbUserRepository::new(app_context.clone());
-    let tokenizer = Tokenizer::new();
+    let tokenizer = service_container.tokenizer();
 
     let _ = ConfirmRegistration::exec(rep, tokenizer, request_data.into_inner()).await?;
 

@@ -9,15 +9,21 @@ use crate::errors::server::ServerErrors::InternalServerError;
 const LENGTH: usize = 32;
 const SYMBOLS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:',.<>/?";
 
+pub trait Tokenizer {
+    fn generate(&self) -> Result<String, Error>;
+    fn validate(&self, value: &str) -> Result<(), Error>;
+}
 
-pub struct Tokenizer;
+pub struct SymbolsTokenizer;
 
-impl Tokenizer {
+impl SymbolsTokenizer {
     pub fn new() -> Self {
         Self
     }
+}
 
-    pub fn generate(&self) -> Result<String, Error> {
+impl Tokenizer for SymbolsTokenizer {
+    fn generate(&self) -> Result<String, Error> {
         let rng = rand::thread_rng();
         let symbols = Uniform::new_inclusive(0, SYMBOLS.chars().count() - 1);
         let value: String = rng
@@ -29,7 +35,7 @@ impl Tokenizer {
         Ok(value)
     }
 
-    pub fn validate(&self, value: &str) -> Result<(), Error> {
+    fn validate(&self, value: &str) -> Result<(), Error> {
         let has_uppercase = Regex::new(r"[A-Z]")
             .map_err(|e|
                 Error::Server(

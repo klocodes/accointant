@@ -8,7 +8,7 @@ use crate::services::tokenizer::Tokenizer;
 pub struct ConfirmRegistration;
 
 impl ConfirmRegistration {
-    pub async fn exec(rep: impl UserRepository, tokenizer: Tokenizer, data: RequestData) -> Result<(), Error> {
+    pub async fn exec(rep: impl UserRepository, tokenizer: impl Tokenizer, data: RequestData) -> Result<(), Error> {
         let email = data.email().to_string();
 
         let mut user: User = rep.find_by_email(email)

@@ -5,7 +5,7 @@ use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::fmt::{Subscriber};
 use tracing_subscriber::fmt::time::ChronoUtc;
 
-use crate::config::log::LogConfig;
+use crate::config::structs::log::LogConfig;
 
 const LOG_PATH: &str = "log";
 

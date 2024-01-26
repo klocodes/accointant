@@ -15,18 +15,16 @@ use crate::services::tokenizer::Tokenizer;
 pub struct RegisterUser;
 
 impl RegisterUser {
-    pub async fn exec<M>(
+    pub async fn exec(
         mut transaction_manager: TransactionManager,
         rep: impl UserRepository,
         hasher: impl Hasher,
-        tokenizer: Tokenizer,
-        mailer: M,
-        templater: Templater<'_>,
+        tokenizer: impl Tokenizer,
+        mailer: impl Mailer,
+        templater: impl Templater,
         template_name: &str,
         request_data: RequestData,
     ) -> Result<(), Error>
-        where
-            M: Mailer
     {
         let email_exists: bool = rep.email_exists(request_data.email()).await?;
 

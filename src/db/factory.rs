@@ -1,4 +1,4 @@
-use crate::config::db::DbConfig;
+use crate::config::structs::db::DbConfig;
 use crate::db::db_manager::DbManager;
 use crate::db::pg_manager::PgManager;
 use crate::errors::Error;

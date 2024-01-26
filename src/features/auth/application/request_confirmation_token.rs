@@ -17,9 +17,9 @@ impl RequestConfirmationToken {
     pub async fn exec<M>(
         mut transaction_manager: TransactionManager,
         rep: impl UserRepository,
-        tokenizer: Tokenizer,
+        tokenizer: impl Tokenizer,
         mailer: M,
-        templater: Templater<'_>,
+        templater: impl Templater,
         template_name: &str,
         user_id: &str,
     ) -> Result<(), Error>

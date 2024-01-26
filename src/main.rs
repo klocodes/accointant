@@ -1,8 +1,11 @@
 use actix::Actor;
-use crate::bootstrap::app_context::AppContext;
 
+use crate::config::manager::ConfigManager;
 use crate::services::data_mapper::DataMapper;
 use crate::db::db_manager::DbManager;
+use crate::di::service_container::ServiceContainer;
+use crate::http::server;
+use crate::log::logger;
 
 mod config;
 mod errors;
@@ -12,14 +15,19 @@ mod log;
 mod db;
 mod services;
 mod bootstrap;
+mod di;
 
 
 #[actix_web::main]
 async fn main() {
-   let (app_context, _guard) = AppContext::new().await.expect("Failed to create app context");
-   let server_config = app_context.get_config().server();
+    let service_container = ServiceContainer::new(ConfigManager::new());
+    let (app_context, _guard) = bootstrap::app_context::AppContext::new().await.expect("TODO: panic message");
 
-   http::server::run(server_config, app_context.clone()).await.expect("Failed to start server");
+    //let _guard = logger::init(service_container.config().log());
 
-   std::mem::forget(_guard);
+    server::run(service_container, app_context)
+        .await
+        .expect("Failed to start server");
+
+    std::mem::forget(_guard);
 }

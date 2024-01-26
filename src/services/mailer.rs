@@ -2,17 +2,16 @@ use async_trait::async_trait;
 use futures_util::TryStreamExt;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Executor, Message, Tokio1Executor, Transport};
 use lettre::address::AddressError;
-use lettre::message::{header, Mailbox, SinglePart};
+use lettre::message::{Mailbox, SinglePart};
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::client::Tls;
-use lettre_email::mime::Mime;
-use crate::config::mailer::MailerConfig;
+use crate::config::structs::mailer::MailerConfig;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
 #[async_trait]
 pub trait Mailer {
-    fn new(cfg: &MailerConfig) -> Self;
+    fn new(cfg: &MailerConfig) -> Result<Self, Error> where Self: Sized;
     async fn send(&self, email: String, subject: String, body: String) -> Result<(), Error>;
 }
 
@@ -27,14 +26,16 @@ pub struct LettreMailer {
 
 #[async_trait]
 impl Mailer for LettreMailer {
-    fn new(cfg: &MailerConfig) -> Self {
-        Self {
+    fn new(cfg: &MailerConfig) -> Result<Self, Error> {
+        let mailer = Self {
             host: cfg.host().to_string(),
             port: cfg.port(),
             username: cfg.username().to_string(),
             password: cfg.password().to_string(),
             from: cfg.from().to_string(),
-        }
+        };
+
+        Ok(mailer)
     }
 
     async fn send(&self, email: String, subject: String, body: String) -> Result<(), Error> {
@@ -47,7 +48,7 @@ impl Mailer for LettreMailer {
                 }
             )
         })?;
-        let email: Mailbox  = email.parse().map_err(|e: AddressError| {
+        let email: Mailbox = email.parse().map_err(|e: AddressError| {
             Error::Server(
                 InternalServerError {
                     context: Some(
@@ -58,8 +59,8 @@ impl Mailer for LettreMailer {
         })?;
 
         let single_part = SinglePart::builder()
-                .header(ContentType::TEXT_HTML)
-                .body(body);
+            .header(ContentType::TEXT_HTML)
+            .body(body);
 
         let message = Message::builder()
             .from(from.clone())

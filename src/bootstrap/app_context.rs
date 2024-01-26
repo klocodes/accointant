@@ -1,7 +1,7 @@
 use sqlx::Postgres;
 use tracing_appender::non_blocking::WorkerGuard;
 
-use crate::config::Config;
+use crate::config::manager::ConfigManager as Config;
 use crate::db::db_transaction::PgTransaction;
 use crate::db::factory::DbManagerFactory;
 use crate::db::pg_manager::PgManager;
@@ -26,7 +26,7 @@ impl AppContext {
 
         let dm_manager = DbManagerFactory::create(db_config).await?;
 
-        let mailer = LettreMailer::new(config.mailer());
+        let mailer = LettreMailer::new(config.mailer())?;
 
         Ok((Self {
             config,

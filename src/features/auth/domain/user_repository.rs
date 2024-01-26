@@ -4,6 +4,7 @@ use crate::bootstrap::app_context::TransactionManager;
 use crate::db::db_transaction::DbTransaction;
 use crate::errors::Error;
 use crate::features::auth::domain::user::User;
+use crate::services::serializer::Serializer;
 
 #[async_trait]
 pub trait UserRepository {

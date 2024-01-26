@@ -1,18 +1,33 @@
+use handlebars::Handlebars;
 use std::collections::HashMap;
 use std::fs;
-use handlebars::Handlebars;
 
+use crate::config::structs::templater::TemplaterConfig;
 use crate::errors::Error;
-use crate::errors::server::ServerErrors;
 use crate::errors::server::ServerErrors::InternalServerError;
 
-pub struct Templater<'a> {
-    template: Handlebars<'a>,
+pub trait Templater {
+    fn register(&mut self, name: &str, file_path: &str) -> Result<(), Error>;
+    fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, Error>;
 }
 
-impl Templater<'_> {
-    pub fn new(name: &str, path: &str) -> Result<Self, Error> {
-        let mut handlebars = Handlebars::new();
+pub struct HandlebarsTemplater<'a> {
+    templater: Handlebars<'a>,
+    cfg: TemplaterConfig,
+}
+
+impl HandlebarsTemplater<'_> {
+    pub fn new(cfg: TemplaterConfig) -> Self {
+        Self {
+            templater: Handlebars::new(),
+            cfg,
+        }
+    }
+}
+
+impl Templater for HandlebarsTemplater<'_> {
+    fn register(&mut self, name: &str, file_path: &str) -> Result<(), Error> {
+        let path = format!("{}/{}", self.cfg.dir(), file_path);
 
         let template_string = fs::read_to_string(path)
             .map_err(|e| {
@@ -21,7 +36,7 @@ impl Templater<'_> {
                 })
             })?;
 
-        handlebars.register_template_string(name, &template_string)
+        self.templater.register_template_string(name, &template_string)
             .map_err(|e| {
                 Error::Server(
                     InternalServerError {
@@ -32,13 +47,11 @@ impl Templater<'_> {
                 )
             })?;
 
-        Ok(Self {
-            template: handlebars,
-        })
+        Ok(())
     }
 
-    pub fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, Error> {
-        self.template.render(name, &data)
+    fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, Error> {
+        self.templater.render(name, &data)
             .map_err(|e| {
                 Error::Server(InternalServerError {
                     context: Some(format!("Failed to render template: {}", e.to_string()).into())
