@@ -1,19 +1,19 @@
 use std::time::Duration;
 use async_trait::async_trait;
-use sqlx::{ConnectOptions, PgPool, Postgres};
+use sqlx::{ConnectOptions, PgPool, Pool, Postgres};
 use sqlx::pool::PoolConnection;
 use sqlx::postgres::{PgPoolOptions};
 
-use crate::db::db_manager::DbManager;
+use crate::db::connection::manager::ConnectionManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
 #[derive(Clone)]
-pub struct PgManager {
+pub struct PgConnectionManager {
     pool: Option<PgPool>,
 }
 
-impl PgManager {
+impl PgConnectionManager {
     pub fn new() -> Self {
         Self {
             pool: None
@@ -22,8 +22,8 @@ impl PgManager {
 }
 
 #[async_trait]
-impl DbManager for PgManager {
-    type Pool = PgPool;
+impl ConnectionManager for PgConnectionManager {
+    type Pool = Pool<Postgres>;
     type Connection = PoolConnection<Postgres>;
 
     async fn connect(&self, url: &str, timeout: Duration, max_connections: u32) -> Result<Self, Error> {

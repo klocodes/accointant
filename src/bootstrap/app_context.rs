@@ -2,16 +2,16 @@ use sqlx::Postgres;
 use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::config::manager::ConfigManager as Config;
+use crate::db::connection::factory::ConnectionManagerFactory;
+use crate::db::connection::pg_manager::PgConnectionManager;
 use crate::db::db_transaction::PgTransaction;
-use crate::db::factory::DbManagerFactory;
-use crate::db::pg_manager::PgManager;
 use crate::errors::Error;
 use crate::services::mailer::{LettreMailer, Mailer};
 
 #[derive(Clone)]
 pub struct AppContext {
     config: Config,
-    dm_manager: PgManager,
+    dm_manager: PgConnectionManager,
     mailer: LettreMailer,
 }
 
@@ -24,7 +24,7 @@ impl AppContext {
 
         let _guard = crate::log::logger::init(log_config).await.unwrap();
 
-        let dm_manager = DbManagerFactory::create(db_config).await?;
+        let dm_manager = ConnectionManagerFactory::create(db_config).await?;
 
         let mailer = LettreMailer::new(config.mailer())?;
 
@@ -39,7 +39,7 @@ impl AppContext {
         &self.config
     }
 
-    pub fn get_db_manager(&self) -> &PgManager {
+    pub fn get_db_manager(&self) -> &PgConnectionManager {
         &self.dm_manager
     }
 

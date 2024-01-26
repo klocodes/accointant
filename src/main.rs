@@ -1,7 +1,6 @@
 use actix::Actor;
 
 use crate::config::manager::ConfigManager;
-use crate::db::db_manager::DbManager;
 use crate::di::service_container::ServiceContainer;
 use crate::http::server;
 use crate::log::logger;
@@ -19,7 +18,7 @@ mod di;
 
 #[actix_web::main]
 async fn main() {
-    let service_container = ServiceContainer::new(ConfigManager::new());
+    let service_container = ServiceContainer::new(ConfigManager::new()).await.expect("Failed to create service container");
     let (app_context, _guard) = bootstrap::app_context::AppContext::new().await.expect("TODO: panic message");
 
     //let _guard = logger::init(service_container.config().log());

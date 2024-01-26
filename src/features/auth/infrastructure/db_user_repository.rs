@@ -3,7 +3,7 @@ use sqlx::{query, query_as, Row};
 use uuid::Uuid;
 
 use crate::bootstrap::app_context::{AppContext, TransactionManager};
-use crate::db::db_manager::DbManager;
+use crate::db::connection::manager::ConnectionManager;
 use crate::db::db_transaction::DbTransaction;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;

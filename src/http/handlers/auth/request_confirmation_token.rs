@@ -3,6 +3,7 @@ use actix_web::web::{Data, Path};
 use serde::Deserialize;
 use crate::bootstrap::app_context::{AppContext, TransactionManager};
 use crate::config::structs::templater;
+use crate::db::connection::manager::ConnectionManager;
 use crate::di::service_container::ServiceContainer;
 use crate::errors::Error;
 use crate::features::auth::application::request_confirmation_token::RequestConfirmationToken;

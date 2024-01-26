@@ -4,6 +4,7 @@ use serde::Deserialize;
 use validator::Validate;
 
 use crate::bootstrap::app_context::{AppContext, TransactionManager};
+use crate::db::connection::manager::ConnectionManager;
 use crate::di::service_container::ServiceContainer;
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;
@@ -40,8 +41,7 @@ impl RequestData {
 }
 
 #[post("/register")]
-async fn register(data: Json<RequestData>, state: Data<(AppContext, ServiceContainer)>) -> Result<impl Responder, Error>
-{
+async fn register(data: Json<RequestData>, state: Data<(AppContext, ServiceContainer)>) -> Result<impl Responder, Error> {
     if let Err(e) = data.validate() {
         return Err(Error::Client(ClientErrors::BadRequest { message: Some(e.to_string().into()) }));
     }
