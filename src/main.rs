@@ -1,7 +1,6 @@
 use actix::Actor;
 
 use crate::config::manager::ConfigManager;
-use crate::services::data_mapper::DataMapper;
 use crate::db::db_manager::DbManager;
 use crate::di::service_container::ServiceContainer;
 use crate::http::server;
