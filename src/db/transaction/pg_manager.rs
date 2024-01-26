@@ -1,35 +1,22 @@
 use async_trait::async_trait;
-use sqlx::{PgPool, Postgres, Transaction};
-use sqlx::encode::IsNull::No;
+use sqlx::{PgPool, Pool, Postgres, Transaction};
+use crate::db::transaction::manager::TransactionManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
-#[async_trait]
-pub trait DbTransaction {
-    type Pool;
-    type Transaction;
-
-    async fn begin(&mut self, pool: Self::Pool) -> Result<(), Error>;
-    async fn get(&mut self) -> Result<&mut Self::Transaction, Error>;
-
-    async fn commit(mut self) -> Result<(), Error>;
-
-    async fn rollback(mut self) -> Result<(), Error>;
-}
-
-pub struct PgTransaction<'a> {
+pub struct PgTransactionManager<'a> {
     tx: Option<Transaction<'a, Postgres>>,
 }
 
-impl<'a> PgTransaction<'a> {
+impl<'a> PgTransactionManager<'a> {
     pub fn new() -> Self {
         Self { tx: None }
     }
 }
 
 #[async_trait]
-impl<'a> DbTransaction for PgTransaction<'a> {
-    type Pool = PgPool;
+impl<'a> TransactionManager for PgTransactionManager<'a> {
+    type Pool = Pool<Postgres>;
 
     type Transaction = Transaction<'a, Postgres>;
 

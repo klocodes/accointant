@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use crate::config::manager::ConfigManager;
-use crate::db::connection::factory::ConnectionManagerFactory;
 use crate::db::connection::manager::ConnectionManager;
-use crate::db::connection::pg_manager::PgConnectionManager;
+use crate::db::db_manager::DbManager;
+use crate::db::transaction::pg_manager::PgTransactionManager;
 use crate::errors::Error;
 use crate::services::hasher::{BcryptHasher, Hasher};
 use crate::services::mailer::{LettreMailer, Mailer};
@@ -13,23 +13,26 @@ use crate::services::tokenizer::{SymbolsTokenizer, Tokenizer};
 #[derive(Clone)]
 pub struct ServiceContainer {
     config: ConfigManager,
-    connection_manager: Arc<PgConnectionManager>,
+    db_manager: DbManager,
 }
 
 impl ServiceContainer {
     pub async fn new(config: ConfigManager) -> Result<Self, Error> {
-        let connection_manager = ConnectionManagerFactory::create(config.db()).await?;
+        let db_manager = DbManager::new(config.db()).await?;
 
-        let container = Self {
+
+        Ok(Self {
             config: config.clone(),
-            connection_manager: Arc::new(connection_manager)
-        };
-
-        Ok(container)
+            db_manager
+        })
     }
 
     pub fn config(&self) -> &ConfigManager {
         &self.config
+    }
+
+    pub fn db_manager(&self) -> DbManager {
+        self.db_manager.clone()
     }
 
     pub fn hasher(&self) -> impl Hasher {

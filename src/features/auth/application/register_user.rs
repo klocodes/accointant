@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use crate::bootstrap::app_context::TransactionManager;
-use crate::db::db_transaction::DbTransaction;
+use crate::db::db_manager::TransactionManager;
+use crate::db::transaction::manager::TransactionManager as TransactionManagerTrait;
 use crate::errors::client::ClientErrors;
 use crate::errors::Error;
 use crate::features::auth::application::dto::user_data::UserData;
@@ -16,7 +16,7 @@ pub struct RegisterUser;
 
 impl RegisterUser {
     pub async fn exec(
-        mut transaction_manager: TransactionManager,
+        mut transaction_manager: TransactionManager<'_>,
         rep: impl UserRepository,
         hasher: impl Hasher,
         tokenizer: impl Tokenizer,

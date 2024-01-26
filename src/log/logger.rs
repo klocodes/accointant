@@ -9,7 +9,7 @@ use crate::config::structs::log::LogConfig;
 
 const LOG_PATH: &str = "log";
 
-pub async fn init(config: &LogConfig) -> Result<WorkerGuard, Box<dyn std::error::Error>>{
+pub async fn init(config: LogConfig) -> Result<WorkerGuard, Box<dyn std::error::Error>>{
     let path: String = calculate_log_path();
     let rotation_period: &str = config.rotation();
 

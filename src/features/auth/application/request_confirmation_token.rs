@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use uuid::Uuid;
+use crate::db::db_manager::TransactionManager;
+use crate::db::transaction::manager::TransactionManager as TransactionManagerTrait;
 
-use crate::bootstrap::app_context::TransactionManager;
-use crate::db::db_transaction::DbTransaction;
-use crate::errors::client::ClientErrors::{BadRequest, DomainError};
+use crate::errors::client::ClientErrors::{BadRequest};
 use crate::errors::Error;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
@@ -15,7 +15,7 @@ pub struct RequestConfirmationToken;
 
 impl RequestConfirmationToken {
     pub async fn exec<M>(
-        mut transaction_manager: TransactionManager,
+        mut transaction_manager: TransactionManager<'_>,
         rep: impl UserRepository,
         tokenizer: impl Tokenizer,
         mailer: M,

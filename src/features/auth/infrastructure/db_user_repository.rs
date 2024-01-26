@@ -1,10 +1,11 @@
+use std::sync::Arc;
 use async_trait::async_trait;
 use sqlx::{query, query_as, Row};
 use uuid::Uuid;
 
-use crate::bootstrap::app_context::{AppContext, TransactionManager};
 use crate::db::connection::manager::ConnectionManager;
-use crate::db::db_transaction::DbTransaction;
+use crate::db::db_manager::{DbManager, TransactionManager};
+use crate::db::transaction::manager::TransactionManager as TransactionManagerTrait;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::auth::domain::user::User;
@@ -14,15 +15,15 @@ use crate::features::shared::data_mapper::DataMapper;
 use crate::services::serializer::Serializer;
 
 pub struct DbUserRepository<S: Serializer> {
-    app_context: AppContext,
+    db_manager: DbManager,
     serializer: S,
 }
 
 impl<S: Serializer> DbUserRepository<S> {
-    pub fn new(app_context: AppContext, serializer: S) -> Self {
+    pub fn new(db_manager: DbManager, serializer: S) -> Self {
         Self {
-            app_context,
-            serializer
+            db_manager,
+            serializer,
         }
     }
 }
@@ -34,7 +35,7 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
 
         let res_query = query_as::<_, UserSchema>(q).bind(user_id);
 
-        let pool = self.app_context.get_db_manager().pool().await?;
+        let pool = self.db_manager.conn().await?.pool().await?;
 
         let user_schema_option = res_query.fetch_optional(&pool).await
             .map_err(|e| Error::Server(InternalServerError {
@@ -55,7 +56,9 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
 
         let res_query = query_as::<_, UserSchema>(q).bind(email);
 
-        let pool = self.app_context.get_db_manager().pool().await?;
+        let pool = self.db_manager
+            .conn().await?
+            .pool().await?;
 
         let user_schema_option = res_query.fetch_optional(&pool).await
             .map_err(|e| Error::Server(InternalServerError {
@@ -76,7 +79,9 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
 
         let res_query = query(q).bind(email);
 
-        let pool = self.app_context.get_db_manager().pool().await?;
+        let pool = self.db_manager
+            .conn().await?
+            .pool().await?;
 
         let row = res_query.fetch_one(&pool).await
             .map_err(|e| Error::Server(InternalServerError {
@@ -104,7 +109,9 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
             .bind(user_schema.created_at())
             .bind(user_schema.updated_at());
 
-        let pool = self.app_context.get_db_manager().pool().await?;
+        let pool = self.db_manager
+            .conn().await?
+            .pool().await?;
 
         transaction_manager.begin(pool).await?;
 
@@ -131,7 +138,9 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
             .bind(user.updated_at())
             .bind(user.id());
 
-        let pool = self.app_context.get_db_manager().pool().await?;
+        let pool = self.db_manager
+            .conn().await?
+            .pool().await?;
 
         res_query.execute(&pool).await.map_err(|e| {
             Error::Server(
@@ -154,7 +163,10 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
             .bind(user.updated_at())
             .bind(user.id());
 
-        let pool = self.app_context.get_db_manager().pool().await?;
+        let pool = self.db_manager.conn()
+            .await?
+            .pool()
+            .await?;
 
         transaction_manager.begin(pool).await?;
 

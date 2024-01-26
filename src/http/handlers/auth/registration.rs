@@ -1,9 +1,9 @@
+use std::sync::Arc;
 use actix_web::{post, HttpResponse, Responder};
 use actix_web::web::{Data, Json};
 use serde::Deserialize;
 use validator::Validate;
 
-use crate::bootstrap::app_context::{AppContext, TransactionManager};
 use crate::db::connection::manager::ConnectionManager;
 use crate::di::service_container::ServiceContainer;
 use crate::errors::Error;
@@ -12,7 +12,6 @@ use crate::features::auth::application::register_user::RegisterUser;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
 use crate::services::hasher::BcryptHasher;
 use crate::services::templater::Templater;
-use crate::services::tokenizer::Tokenizer;
 
 #[derive(Deserialize, Validate)]
 pub struct RequestData {
@@ -41,24 +40,26 @@ impl RequestData {
 }
 
 #[post("/register")]
-async fn register(data: Json<RequestData>, state: Data<(AppContext, ServiceContainer)>) -> Result<impl Responder, Error> {
+async fn register(data: Json<RequestData>, state: Data<ServiceContainer>) -> Result<impl Responder, Error> {
     if let Err(e) = data.validate() {
         return Err(Error::Client(ClientErrors::BadRequest { message: Some(e.to_string().into()) }));
     }
 
-    let (app_context, service_container)  = state.as_ref().clone();
+    let service_container = state.as_ref().clone();
 
-    let user_rep = DbUserRepository::new(app_context.clone(), service_container.serializer());
-    let transaction_manager = TransactionManager::new();
+    let db_manager = service_container.db_manager();
+    let serializer = service_container.serializer();
+    let user_rep = DbUserRepository::new(db_manager.clone(), serializer);
+
+    let transaction_manager = db_manager.transaction_manager()?;
 
     let tokenizer = service_container.tokenizer();
     let hasher = BcryptHasher::new();
 
-    let mailer = app_context.get_mailer().clone();
-
-    let template_name = "";
+    let mailer = service_container.mailer()?;
+    let mailer_template_name = "confirm_registration";
     let mut templater = service_container.templater()?;
-    templater.register(template_name, "confirm_registration.hbs")?;
+    templater.register(mailer_template_name, "confirm_registration.hbs")?;
 
     let _ = RegisterUser::exec(
         transaction_manager,
@@ -67,7 +68,7 @@ async fn register(data: Json<RequestData>, state: Data<(AppContext, ServiceConta
         tokenizer,
         mailer,
         templater,
-        template_name,
+        mailer_template_name,
         data.into_inner(),
     ).await?;
 

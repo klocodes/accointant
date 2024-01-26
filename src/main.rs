@@ -12,18 +12,16 @@ mod http;
 mod log;
 mod db;
 mod services;
-mod bootstrap;
 mod di;
 
 
 #[actix_web::main]
 async fn main() {
     let service_container = ServiceContainer::new(ConfigManager::new()).await.expect("Failed to create service container");
-    let (app_context, _guard) = bootstrap::app_context::AppContext::new().await.expect("TODO: panic message");
 
-    //let _guard = logger::init(service_container.config().log());
+    let _guard = logger::init(service_container.config().log().clone());
 
-    server::run(service_container, app_context)
+    server::run(service_container)
         .await
         .expect("Failed to start server");
 
