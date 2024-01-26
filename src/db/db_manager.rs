@@ -2,7 +2,7 @@ use std::sync::Arc;
 use crate::config::structs::db::DbConfig;
 use crate::db::connection::manager::ConnectionManager;
 use crate::db::connection::pg_manager::PgConnectionManager;
-use crate::db::transaction::pg_manager::PgTransactionManager;
+use crate::db::transaction::container::TransactionContainer;
 use crate::errors::Error;
 
 #[derive(Clone)]
@@ -28,14 +28,11 @@ impl DbManager {
         })
     }
 
-    pub async fn conn(&self) -> Result<Arc<PgConnectionManager>, Error> {
+    pub async fn connection_manager(&self) -> Result<Arc<PgConnectionManager>, Error> {
         Ok(self.conn.clone())
     }
 
-    pub fn transaction_manager(&self) -> Result<PgTransactionManager, Error> {
-        Ok(PgTransactionManager::new())
+    pub fn transaction_container(&self) -> Result<TransactionContainer, Error> {
+        Ok(TransactionContainer::new())
     }
 }
-
-pub type TransactionManager<'a> = PgTransactionManager<'a>;
-

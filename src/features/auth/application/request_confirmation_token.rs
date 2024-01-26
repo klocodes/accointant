@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use uuid::Uuid;
-use crate::db::db_manager::TransactionManager;
+use crate::db::transaction::container::TransactionContainer;
 use crate::db::transaction::manager::TransactionManager as TransactionManagerTrait;
 
 use crate::errors::client::ClientErrors::{BadRequest};
@@ -15,7 +15,7 @@ pub struct RequestConfirmationToken;
 
 impl RequestConfirmationToken {
     pub async fn exec<M>(
-        mut transaction_manager: TransactionManager<'_>,
+        mut transaction_container: TransactionContainer<'_>,
         rep: impl UserRepository,
         tokenizer: impl Tokenizer,
         mailer: M,
@@ -42,7 +42,7 @@ impl RequestConfirmationToken {
         let token = tokenizer.generate()?;
         user.request_confirmation(token.clone()).await?;
 
-        rep.update_confirmation_token(&mut transaction_manager, user.clone()).await?;
+        rep.update_confirmation_token(&mut transaction_container, user.clone()).await?;
 
         let mut body_data = HashMap::new();
         let url = format!(
@@ -57,12 +57,12 @@ impl RequestConfirmationToken {
         let res = mailer.send(email, subject, body).await;
 
         if let Err(e) = res {
-            transaction_manager.rollback().await?;
+            transaction_container.take_manager().rollback().await?;
 
             return Err(e);
         }
 
-        transaction_manager.commit().await?;
+        transaction_container.take_manager().commit().await?;
 
         Ok(())
     }

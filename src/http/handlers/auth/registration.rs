@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use actix_web::{post, HttpResponse, Responder};
 use actix_web::web::{Data, Json};
 use serde::Deserialize;
@@ -51,7 +50,7 @@ async fn register(data: Json<RequestData>, state: Data<ServiceContainer>) -> Res
     let serializer = service_container.serializer();
     let user_rep = DbUserRepository::new(db_manager.clone(), serializer);
 
-    let transaction_manager = db_manager.transaction_manager()?;
+    let transaction_container = db_manager.transaction_container()?;
 
     let tokenizer = service_container.tokenizer();
     let hasher = BcryptHasher::new();
@@ -62,7 +61,7 @@ async fn register(data: Json<RequestData>, state: Data<ServiceContainer>) -> Res
     templater.register(mailer_template_name, "confirm_registration.hbs")?;
 
     let _ = RegisterUser::exec(
-        transaction_manager,
+        transaction_container,
         user_rep,
         hasher,
         tokenizer,

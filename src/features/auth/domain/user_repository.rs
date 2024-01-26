@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use uuid::Uuid;
-use crate::db::db_manager::TransactionManager;
+use crate::db::transaction::container::TransactionContainer;
 use crate::errors::Error;
 use crate::features::auth::domain::user::User;
 
@@ -12,9 +12,9 @@ pub trait UserRepository {
 
     async fn email_exists(&self, email: &str) -> Result<bool, Error>;
 
-    async fn create(&self, transaction_manager: &mut TransactionManager, user: &User) -> Result<(), Error>;
+    async fn create(&self, transaction_container: &mut TransactionContainer, user: &User) -> Result<(), Error>;
 
     async fn confirm_email(&self, user: User) -> Result<(), Error>;
 
-    async fn update_confirmation_token(&self, transaction_manager: &mut TransactionManager, user: User) -> Result<(), Error>;
+    async fn update_confirmation_token(&self, transaction_container: &mut TransactionContainer, user: User) -> Result<(), Error>;
 }

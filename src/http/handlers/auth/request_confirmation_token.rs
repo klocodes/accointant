@@ -6,7 +6,6 @@ use crate::di::service_container::ServiceContainer;
 use crate::errors::Error;
 use crate::features::auth::application::request_confirmation_token::RequestConfirmationToken;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
-use crate::services::hasher::BcryptHasher;
 use crate::services::templater::Templater;
 
 #[derive(Debug, Deserialize)]
@@ -19,7 +18,7 @@ async fn request(user_id: Path<UserId>, state: Data<ServiceContainer>) -> Result
     let serializer = service_container.serializer();
     let user_rep = DbUserRepository::new(db_manager.clone(), serializer);
 
-    let transaction_manager = db_manager.transaction_manager()?;
+    let transaction_container = db_manager.transaction_container()?;
 
     let tokenizer = service_container.tokenizer();
 
@@ -30,7 +29,7 @@ async fn request(user_id: Path<UserId>, state: Data<ServiceContainer>) -> Result
     templater.register(mailer_template_name, "confirm_registration.hbs")?;
 
     let _ = RequestConfirmationToken::exec(
-        transaction_manager,
+        transaction_container,
         user_rep,
         tokenizer,
         mailer,

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::db::db_manager::TransactionManager;
+use crate::db::transaction::container::TransactionContainer;
 use crate::db::transaction::manager::TransactionManager as TransactionManagerTrait;
 use crate::errors::client::ClientErrors;
 use crate::errors::Error;
@@ -16,7 +16,7 @@ pub struct RegisterUser;
 
 impl RegisterUser {
     pub async fn exec(
-        mut transaction_manager: TransactionManager<'_>,
+        mut transaction_container: TransactionContainer<'_>,
         rep: impl UserRepository,
         hasher: impl Hasher,
         tokenizer: impl Tokenizer,
@@ -47,7 +47,7 @@ impl RegisterUser {
         );
         let user = User::register(user_data.clone())?;
 
-        let _ = rep.create(&mut transaction_manager, &user).await?;
+        let _ = rep.create(&mut transaction_container, &user).await?;
 
         let mut body_data = HashMap::new();
         let url = format!(
@@ -60,12 +60,12 @@ impl RegisterUser {
         let res = mailer.send(user.email().value().to_string(), "Confirmation email".to_string(), body).await;
 
         if let Err(e) = res {
-            transaction_manager.rollback().await?;
+            transaction_container.take_manager().rollback().await?;
 
             return Err(e);
         }
 
-        transaction_manager.commit().await?;
+        transaction_container.take_manager().commit().await?;
 
         Ok(())
     }

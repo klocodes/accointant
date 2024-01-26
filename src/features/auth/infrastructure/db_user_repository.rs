@@ -1,10 +1,10 @@
-use std::sync::Arc;
 use async_trait::async_trait;
 use sqlx::{query, query_as, Row};
 use uuid::Uuid;
 
 use crate::db::connection::manager::ConnectionManager;
-use crate::db::db_manager::{DbManager, TransactionManager};
+use crate::db::db_manager::{DbManager};
+use crate::db::transaction::container::TransactionContainer;
 use crate::db::transaction::manager::TransactionManager as TransactionManagerTrait;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
@@ -35,7 +35,7 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
 
         let res_query = query_as::<_, UserSchema>(q).bind(user_id);
 
-        let pool = self.db_manager.conn().await?.pool().await?;
+        let pool = self.db_manager.connection_manager().await?.pool().await?;
 
         let user_schema_option = res_query.fetch_optional(&pool).await
             .map_err(|e| Error::Server(InternalServerError {
@@ -57,7 +57,7 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
         let res_query = query_as::<_, UserSchema>(q).bind(email);
 
         let pool = self.db_manager
-            .conn().await?
+            .connection_manager().await?
             .pool().await?;
 
         let user_schema_option = res_query.fetch_optional(&pool).await
@@ -80,7 +80,7 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
         let res_query = query(q).bind(email);
 
         let pool = self.db_manager
-            .conn().await?
+            .connection_manager().await?
             .pool().await?;
 
         let row = res_query.fetch_one(&pool).await
@@ -95,7 +95,7 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
     }
 
 
-    async fn create(&self, transaction_manager: &mut TransactionManager, user: &User) -> Result<(), Error> {
+    async fn create(&self, transaction_container: &mut TransactionContainer, user: &User) -> Result<(), Error> {
         let user_schema = UserSchema::encode(self.serializer.clone(), user)?;
 
         let q = "INSERT INTO users (id, email, password, confirmation_token, confirmation_token_expires_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)";
@@ -110,12 +110,12 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
             .bind(user_schema.updated_at());
 
         let pool = self.db_manager
-            .conn().await?
+            .connection_manager().await?
             .pool().await?;
 
-        transaction_manager.begin(pool).await?;
+        transaction_container.get_manager().begin(pool).await?;
 
-        let tx = transaction_manager.get().await?;
+        let tx = transaction_container.get_manager().get().await?;
 
         res_query.execute(&mut **tx).await.map_err(|e| {
             Error::Server(
@@ -139,7 +139,7 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
             .bind(user.id());
 
         let pool = self.db_manager
-            .conn().await?
+            .connection_manager().await?
             .pool().await?;
 
         res_query.execute(&pool).await.map_err(|e| {
@@ -155,7 +155,7 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
         Ok(())
     }
 
-    async fn update_confirmation_token(&self, transaction_manager: &mut TransactionManager, user: User) -> Result<(), Error> {
+    async fn update_confirmation_token(&self, transaction_container: &mut TransactionContainer, user: User) -> Result<(), Error> {
         let q = "UPDATE users SET confirmation_token = $1, confirmation_token_expires_at = $2, updated_at = $3 WHERE id = $4";
         let mut res_query = query(q)
             .bind(user.confirmation_token().value())
@@ -163,14 +163,15 @@ impl<S: Serializer> UserRepository for DbUserRepository<S> {
             .bind(user.updated_at())
             .bind(user.id());
 
-        let pool = self.db_manager.conn()
+        let pool = self.db_manager
+            .connection_manager()
             .await?
             .pool()
             .await?;
 
-        transaction_manager.begin(pool).await?;
+        transaction_container.get_manager().begin(pool).await?;
 
-        let tx = transaction_manager.get().await?;
+        let tx = transaction_container.get_manager().get().await?;
 
         res_query.execute(&mut **tx).await.map_err(|e| {
             Error::Server(
