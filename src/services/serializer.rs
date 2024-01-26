@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
+
 pub trait Serializer: Clone + Send + Sync {
     fn serialize<T: Serialize>(&self, item: &T) -> Result<Vec<u8>, Error>;
     fn deserialize<'a, T: Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T, Error>;

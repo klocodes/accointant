@@ -1,3 +1,4 @@
+use mockall::automock;
 use rand::distributions::Uniform;
 use rand::Rng;
 use regex::Regex;
@@ -9,6 +10,8 @@ use crate::errors::server::ServerErrors::InternalServerError;
 const LENGTH: usize = 32;
 const SYMBOLS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+
+#[automock]
 pub trait Tokenizer {
     fn generate(&self) -> Result<String, Error>;
     fn validate(&self, value: &str) -> Result<(), Error>;

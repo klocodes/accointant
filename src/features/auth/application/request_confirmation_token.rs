@@ -40,7 +40,7 @@ impl RequestConfirmationToken {
             )?;
 
         let token = tokenizer.generate()?;
-        user.request_confirmation(token.clone()).await?;
+        user.request_confirmation(token.clone())?;
 
         rep.update_confirmation_token(&mut transaction_container, user.clone()).await?;
 

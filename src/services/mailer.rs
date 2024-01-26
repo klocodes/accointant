@@ -5,10 +5,13 @@ use lettre::address::AddressError;
 use lettre::message::{Mailbox, SinglePart};
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::client::Tls;
+use mockall::automock;
 use crate::config::structs::mailer::MailerConfig;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
+
+#[automock]
 #[async_trait]
 pub trait Mailer {
     fn new(cfg: &MailerConfig) -> Result<Self, Error> where Self: Sized;

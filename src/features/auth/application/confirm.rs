@@ -26,7 +26,7 @@ impl ConfirmRegistration {
             return Err(is_valid.unwrap_err());
         }
 
-        user.confirm(token.to_string()).await?;
+        user.confirm(token.to_string())?;
 
         rep.confirm_email(user).await?;
 

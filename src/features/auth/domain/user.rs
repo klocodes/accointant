@@ -1,12 +1,13 @@
 use uuid;
 use chrono;
+use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::errors::client::ClientErrors::{BadRequest, DomainError};
 use crate::errors::Error;
 use crate::features::auth::application::dto::user_data::UserData;
-use crate::features::auth::domain::confirmation_token::ConfirmationToken;
+use crate::features::auth::domain::confirmation_token::{ConfirmationToken, EXPIRATION_HOURS};
 use crate::features::auth::domain::email::Email;
 use crate::features::auth::domain::password::Password;
 
@@ -16,7 +17,7 @@ pub struct User {
 
     #[serde(flatten)]
     email: Email,
-    
+
     password: Password,
 
     #[serde(rename = "created_at")]
@@ -43,8 +44,11 @@ impl User {
         }
 
         let email = Email::new(data.email().to_string())?;
-        let password = Password::new(data.password().to_string(), data.hashed_password().to_string())?;
-        let confirmation_token = ConfirmationToken::new(data.confirmation_token().to_string());
+        let password = Password::new(data.hashed_password().to_string(), data.password().to_string())?;
+        let confirmation_token = ConfirmationToken::new(
+            data.confirmation_token().to_string(),
+            Utc::now() + Duration::hours(EXPIRATION_HOURS),
+        );
 
         Ok(
             Self {
@@ -59,7 +63,7 @@ impl User {
         )
     }
 
-    pub async fn request_confirmation(&mut self, token: String) -> Result<(), Error> {
+    pub fn request_confirmation(&mut self, token: String) -> Result<(), Error> {
         if self.confirmed_at.is_some() {
             return Err(
                 Error::Client(
@@ -80,13 +84,16 @@ impl User {
             );
         }
 
-        self.confirmation_token = ConfirmationToken::new(token);
+        self.confirmation_token = ConfirmationToken::new(
+            token,
+            Utc::now() + Duration::hours(EXPIRATION_HOURS),
+        );
         self.updated_at = chrono::Utc::now();
 
         Ok(())
     }
 
-    pub async fn confirm(&mut self, token: String) -> Result<(), Error> {
+    pub fn confirm(&mut self, token: String) -> Result<(), Error> {
         if token != self.confirmation_token.value() {
             return Err(
                 Error::Client(
@@ -149,5 +156,41 @@ impl User {
 
     pub fn confirmed_at(&self) -> &Option<chrono::DateTime<chrono::Utc>> {
         &self.confirmed_at
+    }
+}
+
+#[cfg(test)]
+mod register_tests {
+    use super::*;
+    use crate::features::auth::application::dto::user_data::UserData;
+
+    #[test]
+    fn register_user_with_valid_data() {
+        let user_data = UserData::new(
+            "test@example.com".to_string(),
+            "password123".to_string(),
+            "password123".to_string(),
+            "hashed_password".to_string(),
+            "confirmation_token".to_string(),
+        );
+
+        let user = User::register(user_data).unwrap();
+
+        assert_eq!(user.email().value(), "test@example.com");
+        assert_eq!(user.password().value(), "hashed_password");
+        assert!(user.confirmed_at().is_none());
+    }
+
+    #[test]
+    fn register_user_fails_on_password_mismatch() {
+        let user_data = UserData::new(
+            "test@example.com".to_string(),
+            "password123".to_string(),
+            "different_password".to_string(),
+            "hashed_password".to_string(),
+            "confirmation_token".to_string(),
+        );
+
+        assert!(User::register(user_data).is_err());
     }
 }
