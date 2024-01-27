@@ -44,7 +44,7 @@ async fn register(data: Json<RequestData>, state: Data<ServiceContainer>) -> Res
         return Err(Error::Client(ClientErrors::BadRequest { message: Some(e.to_string().into()) }));
     }
 
-    let service_container = state.as_ref().clone();
+    let service_container = state.into_inner();
 
     let db_manager = service_container.db_manager();
     let serializer = service_container.serializer();

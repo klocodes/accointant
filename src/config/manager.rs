@@ -1,6 +1,7 @@
 use config::{Config as ConfigLoader, Environment, File, FileFormat};
 use dotenv::dotenv;
 use serde::Deserialize;
+use crate::config::structs::auth::AuthConfig;
 
 use crate::config::structs::db::DbConfig;
 use crate::config::structs::general::GeneralConfig;
@@ -12,8 +13,9 @@ use crate::config::structs::templater::TemplaterConfig;
 const CONFIG_DIR: &str = "config";
 const CONFIG_FORMAT: FileFormat = FileFormat::Toml;
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct ConfigManager {
+    auth: AuthConfig,
     general: GeneralConfig,
     db: DbConfig,
     server: ServerConfig,
@@ -33,6 +35,7 @@ impl ConfigManager {
         //Define configuration file names
         //TODO: Add configuration file names to here
         let files = vec![
+            "auth.toml",
             "db.toml",
             "general.toml",
             "log.toml",
@@ -65,6 +68,10 @@ impl ConfigManager {
             .and_then(ConfigLoader::try_deserialize)
             .map_err(|e| format!("Failed to load and deserialize configuration: {}", e))
             .unwrap_or_else(|e| panic!("{}", e))
+    }
+
+    pub fn auth(&self) -> &AuthConfig {
+        &self.auth
     }
 
     pub fn db(&self) -> &DbConfig {

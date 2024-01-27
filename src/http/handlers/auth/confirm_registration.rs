@@ -26,7 +26,7 @@ impl RequestData {
 
 #[get("/confirm")]
 async fn confirm(request_data: Query<RequestData>, state: Data<ServiceContainer>) -> Result<impl Responder, Error> {
-    let service_container = state.as_ref().clone();
+    let service_container = state.into_inner();
 
     let db_manager = service_container.db_manager();
     let serializer = service_container.serializer();

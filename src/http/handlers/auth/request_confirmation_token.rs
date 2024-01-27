@@ -12,7 +12,7 @@ use crate::services::templater::Templater;
 pub struct UserId(String);
 #[post("/auth/request-confirmation-token/{id}")]
 async fn request(user_id: Path<UserId>, state: Data<ServiceContainer>) -> Result<impl Responder, Error> {
-    let service_container  = state.as_ref().clone();
+    let service_container  = state.into_inner();
 
     let db_manager = service_container.db_manager();
     let serializer = service_container.serializer();

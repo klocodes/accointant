@@ -1,7 +1,7 @@
 use std::time::Duration;
 use serde::Deserialize;
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct DbConfig {
     host: String,
     port: u16,

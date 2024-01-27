@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use actix_web::{App, HttpServer};
 use actix_web::web::Data;
 use crate::di::service_container::ServiceContainer;
@@ -5,6 +6,7 @@ use crate::http::routes::Routes;
 
 pub async fn run(service_container: ServiceContainer) -> std::io::Result<()> {
     let cfg = service_container.config().server().clone();
+    let service_container = Arc::new(service_container);
 
     HttpServer::new(move || {
         App::new()

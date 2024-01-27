@@ -5,7 +5,7 @@ use crate::db::connection::pg_manager::PgConnectionManager;
 use crate::db::transaction::container::TransactionContainer;
 use crate::errors::Error;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DbManager {
     conn: Arc<PgConnectionManager>,
 }

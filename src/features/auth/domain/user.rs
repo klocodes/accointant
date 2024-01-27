@@ -21,14 +21,14 @@ pub struct User {
     password: Password,
 
     #[serde(rename = "created_at")]
-    registered_at: chrono::DateTime<chrono::Utc>,
+    registered_at: chrono::DateTime<Utc>,
 
-    updated_at: chrono::DateTime<chrono::Utc>,
+    updated_at: chrono::DateTime<Utc>,
 
     #[serde(flatten)]
     confirmation_token: ConfirmationToken,
 
-    confirmed_at: Option<chrono::DateTime<chrono::Utc>>,
+    confirmed_at: Option<chrono::DateTime<Utc>>,
 }
 
 impl User {

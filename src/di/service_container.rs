@@ -5,12 +5,13 @@ use crate::db::db_manager::DbManager;
 use crate::db::transaction::pg_manager::PgTransactionManager;
 use crate::errors::Error;
 use crate::services::hasher::{BcryptHasher, Hasher};
+use crate::services::jwt::{JsonwebtokenLibService, JwtService};
 use crate::services::mailer::{LettreMailer, Mailer};
 use crate::services::serializer::{CborSerializer, Serializer};
 use crate::services::templater::{HandlebarsTemplater, Templater};
 use crate::services::tokenizer::{SymbolsTokenizer, Tokenizer};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ServiceContainer {
     config: ConfigManager,
     db_manager: DbManager,
@@ -37,6 +38,10 @@ impl ServiceContainer {
 
     pub fn hasher(&self) -> impl Hasher {
         BcryptHasher::new()
+    }
+
+    pub fn jwt_service(&self) -> impl JwtService {
+        JsonwebtokenLibService::new(self.config.auth().clone())
     }
 
     pub fn mailer(&self) -> Result<impl Mailer, Error> {

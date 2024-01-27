@@ -8,7 +8,7 @@ use crate::db::connection::manager::ConnectionManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PgConnectionManager {
     pool: Option<PgPool>,
 }
