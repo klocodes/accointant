@@ -97,15 +97,15 @@ impl MqManager for AmqpManager {
 
             let message = Message::new(delivery.data.clone());
 
-            if let Err(e) = callback(message) {
-                log_trace!("Error processing message: {:?}", e);
-                log_error!("Error processing message: {:?}", e);
-            }
+            let _result = callback(message)?;
 
             let _ = delivery.ack(BasicAckOptions::default()).await.map_err(|e| {
-                log_error!("Error acknowledging message: {:?}", e);
-                log_trace!("Error acknowledging message: {:?}", e);
-            });
+                Error::Server(
+                    InternalServerError {
+                        context: Some(format!("Failed to ack delivery: {}", e.to_string()).into())
+                    }
+                )
+            })?;
         }
 
         Ok(())

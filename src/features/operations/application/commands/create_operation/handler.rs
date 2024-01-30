@@ -5,7 +5,6 @@ use crate::features::operations::application::commands::create_operation::comman
 use crate::features::operations::domain::operation::Operation;
 use crate::features::operations::domain::operation_event::OperationEvent;
 use crate::features::operations::domain::operation_repository::OperationRepository;
-use crate::services::serializer::Serializer;
 use crate::support::command_bus::CommandHandler;
 
 #[derive(Debug)]
