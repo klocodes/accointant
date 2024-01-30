@@ -4,9 +4,9 @@ use crate::db::connection::manager::ConnectionManager;
 use crate::db::db_manager::DbManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
-use crate::features::flow::domain::operation_event::{OperationCreatedEventData, OperationEvent};
-use crate::features::flow::domain::operation_repository::OperationRepository;
-use crate::features::flow::infrastructure::schema::operation_created_schema::OperationCreatedEventSchema;
+use crate::features::operations::domain::operation_event::{OperationCreatedEventData, OperationEvent};
+use crate::features::operations::domain::operation_repository::OperationRepository;
+use crate::features::operations::infrastructure::schema::operation_created_schema::OperationCreatedEventSchema;
 use crate::services::serializer::Serializer;
 use crate::support::data_mapper::DataMapper;
 

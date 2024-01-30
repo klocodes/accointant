@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use crate::errors::Error;
-use crate::features::flow::domain::operation_event::{OperationCreatedEventData, OperationEvent};
+use crate::features::operations::domain::operation_event::{OperationCreatedEventData, OperationEvent};
 
 #[async_trait]
 pub trait OperationRepository {

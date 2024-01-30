@@ -87,8 +87,15 @@ impl MqManager for AmqpManager {
 
     async fn consume(&mut self, callback: fn(message: Message) -> Result<(), Error>) -> Result<(), Error> {
         while let Some(delivery) = self.consumer.next().await {
-            let delivery = delivery.expect("error caught in consumer");
-            let message = Message::new(delivery.data.clone()); // Создание вашего сообщения
+            let delivery = delivery.map_err(|e| {
+               Error::Server(
+                   InternalServerError {
+                       context: Some(format!("Failed to get next delivery: {}", e.to_string()).into())
+                   }
+               )
+            })?;
+
+            let message = Message::new(delivery.data.clone());
 
             if let Err(e) = callback(message) {
                 log_trace!("Error processing message: {:?}", e);

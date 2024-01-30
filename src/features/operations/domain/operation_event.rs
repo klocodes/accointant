@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::features::flow::domain::amount::Amount;
-use crate::features::flow::domain::currency::Currency;
-use crate::features::flow::domain::kind::Kind;
+use crate::features::operations::domain::amount::Amount;
+use crate::features::operations::domain::currency::Currency;
+use crate::features::operations::domain::kind::Kind;
 use crate::features::shared::id::Id;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

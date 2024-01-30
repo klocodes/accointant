@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::features::flow::domain::operation_event::{OperationCreatedEventData, OperationEvent};
+use crate::features::operations::domain::operation_event::{OperationCreatedEventData, OperationEvent};
 use crate::support::data_mapper::DataMapper;
 
 #[derive(Clone, Serialize, Deserialize)]

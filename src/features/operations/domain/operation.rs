@@ -1,11 +1,11 @@
 use chrono::{Utc};
 use crate::errors::client::ClientErrors::DomainError;
 use crate::errors::Error;
-use crate::features::flow::application::commands::create_operation::command::CreateOperationCommand;
-use crate::features::flow::domain::amount::Amount;
-use crate::features::flow::domain::currency::Currency;
-use crate::features::flow::domain::kind::Kind;
-use crate::features::flow::domain::operation_event::{CategoryCreationRequestedEventData, OperationCreatedEventData, OperationEvent, TagCreationRequestedEventData};
+use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
+use crate::features::operations::domain::amount::Amount;
+use crate::features::operations::domain::currency::Currency;
+use crate::features::operations::domain::kind::Kind;
+use crate::features::operations::domain::operation_event::{CategoryCreationRequestedEventData, OperationCreatedEventData, OperationEvent, TagCreationRequestedEventData};
 use crate::features::shared::id::Id;
 
 pub struct Operation {
@@ -167,7 +167,7 @@ impl Operation {
 mod operation_creation_tests {
     use uuid::Uuid;
     use super::*;
-    use crate::features::flow::application::commands::create_operation::command::{CreateOperationCommand, TagData};
+    use crate::features::operations::application::commands::create_operation::command::{CreateOperationCommand, TagData};
 
     #[test]
     fn test_operation_creation_with_existing_category_and_tags() {
