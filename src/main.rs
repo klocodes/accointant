@@ -6,13 +6,16 @@ use crate::http::server;
 use crate::log::logger;
 
 mod config;
+mod db;
+mod di;
 mod errors;
 mod features;
 mod http;
 mod log;
-mod db;
+mod mq;
 mod services;
-mod di;
+mod support;
+mod events;
 
 
 #[actix_web::main]

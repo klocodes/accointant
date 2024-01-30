@@ -11,8 +11,8 @@ use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
 use crate::features::auth::infrastructure::user_schema::UserSchema;
-use crate::features::shared::data_mapper::DataMapper;
 use crate::services::serializer::Serializer;
+use crate::support::data_mapper::DataMapper;
 
 pub struct DbUserRepository<S: Serializer> {
     db_manager: DbManager,

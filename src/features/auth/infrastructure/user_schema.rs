@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::features::auth::domain::user::User;
-use crate::features::shared::data_mapper::DataMapper;
+use crate::support::data_mapper::DataMapper;
 
 #[derive(Serialize, Deserialize)]
 

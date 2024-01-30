@@ -4,3 +4,4 @@ pub mod templater;
 pub mod tokenizer;
 pub mod hasher;
 pub mod jwt;
+pub mod http_client;

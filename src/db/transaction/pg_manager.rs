@@ -4,6 +4,7 @@ use crate::db::transaction::manager::TransactionManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
+#[derive(Debug)]
 pub struct PgTransactionManager<'a> {
     tx: Option<Transaction<'a, Postgres>>,
 }

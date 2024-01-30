@@ -5,6 +5,7 @@ use crate::db::db_manager::DbManager;
 use crate::db::transaction::pg_manager::PgTransactionManager;
 use crate::errors::Error;
 use crate::services::hasher::{BcryptHasher, Hasher};
+use crate::services::http_client::{HttpClient, ReqwestClient};
 use crate::services::jwt::{JsonwebtokenLibService, JwtService};
 use crate::services::mailer::{LettreMailer, Mailer};
 use crate::services::serializer::{CborSerializer, Serializer};
@@ -24,7 +25,7 @@ impl ServiceContainer {
 
         Ok(Self {
             config: config.clone(),
-            db_manager
+            db_manager,
         })
     }
 
@@ -38,6 +39,10 @@ impl ServiceContainer {
 
     pub fn hasher(&self) -> impl Hasher {
         BcryptHasher::new()
+    }
+
+    pub async fn http_client(&self) -> impl HttpClient {
+        ReqwestClient::new()
     }
 
     pub fn jwt_service(&self) -> impl JwtService {

@@ -1,5 +1,6 @@
 use crate::db::transaction::pg_manager::PgTransactionManager;
 
+#[derive(Debug)]
 pub struct TransactionContainer<'a> {
     mgr: PgTransactionManager<'a>,
 }
