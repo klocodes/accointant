@@ -8,4 +8,8 @@ impl Message {
             data,
         }
     }
+
+    pub fn data(&self) -> Vec<u8> {
+        self.data.clone()
+    }
 }

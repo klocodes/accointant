@@ -7,6 +7,7 @@ use crate::config::structs::db::DbConfig;
 use crate::config::structs::general::GeneralConfig;
 use crate::config::structs::log::LogConfig;
 use crate::config::structs::mailer::MailerConfig;
+use crate::config::structs::mq::MqConfig;
 use crate::config::structs::server::ServerConfig;
 use crate::config::structs::templater::TemplaterConfig;
 
@@ -16,11 +17,12 @@ const CONFIG_FORMAT: FileFormat = FileFormat::Toml;
 #[derive(Deserialize, Clone, Debug)]
 pub struct ConfigManager {
     auth: AuthConfig,
-    general: GeneralConfig,
     db: DbConfig,
-    server: ServerConfig,
+    general: GeneralConfig,
     log: LogConfig,
     mailer: MailerConfig,
+    mq: MqConfig,
+    server: ServerConfig,
     templater: TemplaterConfig,
 }
 
@@ -88,6 +90,9 @@ impl ConfigManager {
 
     pub fn mailer(&self) -> &MailerConfig {
         &self.mailer
+    }
+    pub fn mq(&self) -> &MqConfig {
+        &self.mq
     }
 
     pub fn server(&self) -> &ServerConfig {

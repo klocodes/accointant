@@ -4,19 +4,19 @@ use crate::db::connection::manager::ConnectionManager;
 use crate::db::db_manager::DbManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
-use crate::features::operations::domain::operation_event::{OperationCreatedEventData, OperationEvent};
+use crate::features::operations::domain::events::operation_created::OperationCreated;
 use crate::features::operations::domain::operation_repository::OperationRepository;
 use crate::features::operations::infrastructure::schema::operation_created_schema::OperationCreatedEventSchema;
 use crate::services::serializer::Serializer;
 use crate::support::data_mapper::DataMapper;
 
-pub struct DbOperationRepository<S: Serializer> {
+pub struct DbOperationRepository {
     db: DbManager,
-    serializer: S,
+    serializer: Serializer,
 }
 
-impl<S: Serializer> DbOperationRepository<S> {
-    pub fn new(db: DbManager, serializer: S) -> Self {
+impl DbOperationRepository {
+    pub fn new(db: DbManager, serializer: Serializer) -> Self {
         Self {
             db,
             serializer,
@@ -25,8 +25,8 @@ impl<S: Serializer> DbOperationRepository<S> {
 }
 
 #[async_trait]
-impl<S: Serializer> OperationRepository for DbOperationRepository<S> {
-    async fn persist_operation_created_event(&self, event_data: OperationCreatedEventData) -> Result<(), Error> {
+impl OperationRepository for DbOperationRepository {
+    async fn persist_operation_created_event(&self, event_data: OperationCreated) -> Result<(), Error> {
         let fields_str = "id, operation_id, category_id, user_id, kind, amount, amount_currency, currency, rate, label, created_at";
         let args_str = "$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11";
         let q = format!("INSERT INTO operations_created ({}) VALUES ({})", fields_str, args_str);

@@ -1,21 +1,14 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
 use crate::features::operations::domain::amount::Amount;
 use crate::features::operations::domain::currency::Currency;
 use crate::features::operations::domain::kind::Kind;
 use crate::features::shared::id::Id;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum OperationEvent {
-    OperationCreated(OperationCreatedEventData),
-    CategoryCreationRequested(CategoryCreationRequestedEventData),
-    TagCreationRequested(TagCreationRequestedEventData),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OperationCreatedEventData {
+pub struct OperationCreated {
     id: Id,
+    name: String,
     operation_id: Id,
     user_id: Id,
     kind: Kind,
@@ -29,7 +22,7 @@ pub struct OperationCreatedEventData {
     created_at: DateTime<Utc>,
 }
 
-impl OperationCreatedEventData {
+impl OperationCreated {
     pub fn new(
         id: Id,
         operation_id: Id,
@@ -46,6 +39,7 @@ impl OperationCreatedEventData {
     ) -> Self {
         Self {
             id,
+            name: "operation_created".to_string(),
             operation_id,
             user_id,
             kind,
@@ -106,85 +100,5 @@ impl OperationCreatedEventData {
 
     pub fn created_at(&self) -> &DateTime<Utc> {
         &self.created_at
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CategoryCreationRequestedEventData {
-    id: Id,
-    user_id: Id,
-    category_id: Id,
-    category_name: String,
-}
-
-impl CategoryCreationRequestedEventData {
-    pub fn new(
-        id: Id,
-        user_id: Id,
-        category_id: Id,
-        category_name: String,
-    ) -> Self {
-        Self {
-            id,
-            user_id,
-            category_id,
-            category_name,
-        }
-    }
-
-    pub fn id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn user_id(&self) -> &Id {
-        &self.user_id
-    }
-
-    pub fn category_id(&self) -> &Id {
-        &self.category_id
-    }
-
-    pub fn category_name(&self) -> &String {
-        &self.category_name
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TagCreationRequestedEventData {
-    id: Id,
-    user_id: Id,
-    tag_id: Id,
-    tag_name: String,
-}
-
-impl TagCreationRequestedEventData {
-    pub fn new(
-        id: Id,
-        user_id: Id,
-        tag_id: Id,
-        tag_name: String,
-    ) -> Self {
-        Self {
-            id,
-            user_id,
-            tag_id,
-            tag_name,
-        }
-    }
-
-    pub fn id(&self) -> &Id {
-        &self.id
-    }
-
-    pub fn user_id(&self) -> &Id {
-        &self.user_id
-    }
-
-    pub fn tag_id(&self) -> &Id {
-        &self.tag_id
-    }
-
-    pub fn tag_name(&self) -> &String {
-        &self.tag_name
     }
 }

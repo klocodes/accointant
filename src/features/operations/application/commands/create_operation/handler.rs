@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use crate::db::transaction::container::TransactionContainer;
 use crate::errors::Error;
 use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
+use crate::features::operations::domain::events::operation_event::OperationEvent;
 use crate::features::operations::domain::operation::Operation;
-use crate::features::operations::domain::operation_event::OperationEvent;
 use crate::features::operations::domain::operation_repository::OperationRepository;
 use crate::support::command_bus::CommandHandler;
 
@@ -16,7 +16,7 @@ pub struct CreateOperationCommandHandler<'a, R>
     transaction_container: TransactionContainer<'a>,
 }
 
-impl<R> CreateOperationCommandHandler<'_, R,>
+impl<R> CreateOperationCommandHandler<'_, R, >
     where
         R: OperationRepository,
 {
@@ -35,8 +35,8 @@ impl<R> CommandHandler<CreateOperationCommand> for CreateOperationCommandHandler
 
         for event in events {
             match event {
-                OperationEvent::OperationCreated(data) => {
-                    self.rep.persist_operation_created_event(data).await?;
+                OperationEvent::OperationCreated(operation_created) => {
+                    self.rep.persist_operation_created_event(operation_created).await?;
                 }
                 _ => {}
             }

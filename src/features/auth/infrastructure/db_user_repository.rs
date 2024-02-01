@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use async_trait::async_trait;
 use sqlx::{query, query_as, Row};
 use uuid::Uuid;
@@ -14,13 +15,13 @@ use crate::features::auth::infrastructure::user_schema::UserSchema;
 use crate::services::serializer::Serializer;
 use crate::support::data_mapper::DataMapper;
 
-pub struct DbUserRepository<S: Serializer> {
-    db_manager: DbManager,
-    serializer: S,
+pub struct DbUserRepository {
+    db_manager: Arc<DbManager>,
+    serializer: Serializer,
 }
 
-impl<S: Serializer> DbUserRepository<S> {
-    pub fn new(db_manager: DbManager, serializer: S) -> Self {
+impl DbUserRepository {
+    pub fn new(db_manager: Arc<DbManager>, serializer: Serializer) -> Self {
         Self {
             db_manager,
             serializer,
@@ -29,7 +30,7 @@ impl<S: Serializer> DbUserRepository<S> {
 }
 
 #[async_trait]
-impl<S: Serializer> UserRepository for DbUserRepository<S> {
+impl UserRepository for DbUserRepository {
     async fn find_by_id(&self, user_id: Uuid) -> Result<Option<User>, Error> {
         let q = "SELECT * FROM users WHERE id = $1";
 

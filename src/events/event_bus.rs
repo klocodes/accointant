@@ -1,13 +1,9 @@
+use async_trait::async_trait;
+use crate::errors::Error;
 use crate::events::event::Event;
-use crate::events::event_listener::EventListener;
 
-pub trait EventBus<EL>
-    where
-        EL: EventListener + Send + Sync + 'static
-{
-    fn register(&mut self, listener: EL);
+#[async_trait]
+pub trait EventBus: Send + Sync + 'static {
 
-    fn publish<E>(&self, event: E)
-        where
-            E: Event;
+    async fn publish(&mut self, event: Event) -> Result<(), Error>;
 }
