@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use crate::config::manager::ConfigManager;
 use crate::db::connection::manager::ConnectionManager;
+use crate::db2::connection::manager::ConnectionManager as ConnectionManager2;
 use crate::db::db_manager::DbManager;
 use crate::errors::Error;
 use crate::mq::manager::MqManager;
@@ -16,10 +17,14 @@ pub struct ServiceContainer {
     config: ConfigManager,
     db_manager: Arc<DbManager>,
     mq_manager: Arc<MqManager>,
+    db_connection: Arc<Box< dyn crate::db2::connection::manager::ConnectionManager>>,
 }
 
 impl ServiceContainer {
-    pub async fn new(config: ConfigManager) -> Result<Self, Error> {
+    pub async fn new(
+        config: ConfigManager,
+        db_connection: Arc<Box<dyn ConnectionManager2>>,
+    ) -> Result<Self, Error> {
         let db_manager = DbManager::new(config.db()).await?;
         let mq_manager = MqManager::new(config.mq()).await?;
 
@@ -28,6 +33,7 @@ impl ServiceContainer {
             config: config.clone(),
             db_manager: Arc::new(db_manager),
             mq_manager: Arc::new(mq_manager),
+            db_connection: db_connection.clone(),
         })
     }
 
