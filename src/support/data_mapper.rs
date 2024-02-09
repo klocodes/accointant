@@ -10,7 +10,7 @@ pub trait DataMapper
     type Schema;
     type Entity;
 
-    fn encode<S: Serializer>(serializer: S, entity: &Self::Entity) -> Result<Self::Schema, Error>
+    fn encode (serializer: Serializer, entity: &Self::Entity) -> Result<Self::Schema, Error>
     {
         let entity = serializer.serialize(&entity)?;
 
@@ -19,7 +19,7 @@ pub trait DataMapper
         Ok(schema)
     }
 
-    fn decode<S: Serializer>(serializer: S, schema: &Self::Schema) -> Result<Self::Entity, Error> {
+    fn decode (serializer: Serializer, schema: &Self::Schema) -> Result<Self::Entity, Error> {
         let schema = serializer.serialize(schema)?;
 
         let entity: Self::Entity = serializer.deserialize(&schema)?;

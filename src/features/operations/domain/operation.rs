@@ -4,8 +4,11 @@ use crate::errors::Error;
 use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
 use crate::features::operations::domain::amount::Amount;
 use crate::features::operations::domain::currency::Currency;
+use crate::features::operations::domain::events::category_creation_requested::CategoryCreationRequested;
+use crate::features::operations::domain::events::operation_created::OperationCreated;
+use crate::features::operations::domain::events::tag_creation_requested::TagCreationRequested;
+use crate::features::operations::domain::events::operation_event::OperationEvent;
 use crate::features::operations::domain::kind::Kind;
-use crate::features::operations::domain::operation_event::{CategoryCreationRequestedEventData, OperationCreatedEventData, OperationEvent, TagCreationRequestedEventData};
 use crate::features::shared::id::Id;
 
 pub struct Operation {
@@ -25,15 +28,14 @@ impl Operation {
     pub fn handle_creation(command: CreateOperationCommand) -> Result<Vec<OperationEvent>, Error> {
         let mut events: Vec<OperationEvent> = vec![];
 
+        let operation_id = Id::new(Id::generate());
         let now = Utc::now();
-
         let user_id = Id::new(command.user_id().clone());
         let kind = Kind::new(command.kind())?;
-
-
         let amount = Amount::new(command.amount())?;
         let currency_amount = Amount::new(command.currency_amount())?;
         let rate = Amount::new(command.rate())?;
+
         if amount.value() != currency_amount.value() * rate.value() {
             return Err(
                 Error::Client(
@@ -49,8 +51,9 @@ impl Operation {
             None => {
                 let category_id = Id::new(Id::generate());
                 let category_created = OperationEvent::CategoryCreationRequested(
-                    CategoryCreationRequestedEventData::new(
+                    CategoryCreationRequested::new(
                         Id::new(Id::generate()),
+                        operation_id.clone(),
                         user_id.clone(),
                         category_id.clone(),
                         command.category_name().to_string(),
@@ -71,9 +74,10 @@ impl Operation {
         for tag in command.tags() {
             if tag.id().is_none() {
                 let tag_id = Id::new(Id::generate());
-                let event = OperationEvent::TagCreationRequested(
-                    TagCreationRequestedEventData::new(
+                let tag_creation_requested = OperationEvent::TagCreationRequested(
+                    TagCreationRequested::new(
                         Id::new(Id::generate()),
+                        operation_id.clone(),
                         user_id.clone(),
                         tag_id.clone(),
                         tag.name().to_string(),
@@ -81,14 +85,14 @@ impl Operation {
                 );
 
                 tags.push(tag_id);
-                events.push(event);
+                events.push(tag_creation_requested);
             } else {
                 tags.push(Id::new(tag.id().unwrap().clone()));
             }
         }
 
         let operation = Self {
-            id: Id::new(Id::generate()),
+            id: operation_id,
             user_id: user_id.clone(),
             kind,
             category_id: category_id.clone(),
@@ -101,7 +105,7 @@ impl Operation {
         };
 
         let operation_created = OperationEvent::OperationCreated(
-            OperationCreatedEventData::new(
+            OperationCreated::new(
                 Id::new(Id::generate()),
                 operation.id().clone(),
                 user_id.clone(),
@@ -393,7 +397,7 @@ mod operation_creation_tests {
         )
     }
 
-    fn assert_operation_created_event(data: OperationCreatedEventData, command: CreateOperationCommand) {
+    fn assert_operation_created_event(data: OperationCreated, command: CreateOperationCommand) {
         assert_eq!(data.id().to_string().len(), 36); // Проверка формата UUID
         assert_eq!(data.operation_id().to_string().len(), 36); // Проверка формата UUID
         assert_eq!(data.user_id().value(), *command.user_id()); // Проверка соответствия user_id
@@ -405,14 +409,14 @@ mod operation_creation_tests {
         assert_eq!(data.label(), command.label());
     }
 
-    fn assert_category_creation_requested_event(data: CategoryCreationRequestedEventData, command: CreateOperationCommand) {
+    fn assert_category_creation_requested_event(data: CategoryCreationRequested, command: CreateOperationCommand) {
         assert_eq!(data.id().to_string().len(), 36); // Проверка формата UUID
         assert_eq!(data.user_id().value(), *command.user_id()); // Проверка соответствия user_id
         assert_eq!(data.category_id().to_string().len(), 36); // Проверка формата UUID
         assert_eq!(data.category_name(), command.category_name());
     }
 
-    fn assert_tag_creation_requested_event(data: TagCreationRequestedEventData, command: CreateOperationCommand, command_tag_index: usize) -> Uuid {
+    fn assert_tag_creation_requested_event(data: TagCreationRequested, command: CreateOperationCommand, command_tag_index: usize) -> Uuid {
         assert_eq!(data.id().to_string().len(), 36); // Проверка формата UUID
         assert_eq!(data.user_id().value(), *command.user_id()); // Проверка соответствия user_id
         assert_eq!(data.tag_id().to_string().len(), 36); // Проверка формата UUID

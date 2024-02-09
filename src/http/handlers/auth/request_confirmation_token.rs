@@ -1,7 +1,6 @@
 use actix_web::{HttpResponse, post, Responder};
 use actix_web::web::{Data, Path};
 use serde::Deserialize;
-use crate::db::connection::manager::ConnectionManager;
 use crate::di::service_container::ServiceContainer;
 use crate::errors::Error;
 use crate::features::auth::application::request_confirmation_token::RequestConfirmationToken;
@@ -18,8 +17,6 @@ async fn request(user_id: Path<UserId>, state: Data<ServiceContainer>) -> Result
     let serializer = service_container.serializer();
     let user_rep = DbUserRepository::new(db_manager.clone(), serializer);
 
-    let transaction_container = db_manager.transaction_container()?;
-
     let tokenizer = service_container.tokenizer();
 
     let mailer = service_container.mailer()?;
@@ -29,7 +26,7 @@ async fn request(user_id: Path<UserId>, state: Data<ServiceContainer>) -> Result
     templater.register(mailer_template_name, "mail/confirm_registration.hbs")?;
 
     let _ = RequestConfirmationToken::exec(
-        transaction_container,
+        db_manager,
         user_rep,
         tokenizer,
         mailer,

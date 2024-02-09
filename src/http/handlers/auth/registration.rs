@@ -3,7 +3,6 @@ use actix_web::web::{Data, Json};
 use serde::Deserialize;
 use validator::Validate;
 
-use crate::db::connection::manager::ConnectionManager;
 use crate::di::service_container::ServiceContainer;
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;
@@ -50,8 +49,6 @@ async fn register(data: Json<RequestData>, state: Data<ServiceContainer>) -> Res
     let serializer = service_container.serializer();
     let user_rep = DbUserRepository::new(db_manager.clone(), serializer);
 
-    let transaction_container = db_manager.transaction_container()?;
-
     let tokenizer = service_container.tokenizer();
     let hasher = BcryptHasher::new();
 
@@ -62,7 +59,7 @@ async fn register(data: Json<RequestData>, state: Data<ServiceContainer>) -> Res
     templater.register(mailer_template_name, "mail/confirm_registration.hbs")?;
 
     let _ = RegisterUser::exec(
-        transaction_container,
+        db_manager,
         user_rep,
         hasher,
         tokenizer,

@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::features::operations::domain::operation_event::{OperationCreatedEventData, OperationEvent};
+use crate::features::operations::domain::events::operation_created::OperationCreated;
 use crate::support::data_mapper::DataMapper;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -24,7 +24,7 @@ pub struct OperationCreatedEventSchema {
 impl DataMapper for OperationCreatedEventSchema {
     type Schema = OperationCreatedEventSchema;
 
-    type Entity = OperationCreatedEventData;
+    type Entity = OperationCreated;
 }
 
 impl OperationCreatedEventSchema {

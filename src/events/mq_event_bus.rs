@@ -1,46 +1,46 @@
+use std::sync::Arc;
+use async_trait::async_trait;
+use tokio::sync::Mutex;
 use crate::events::event::Event;
+use crate::events::event_bus::EventBus;
 use crate::events::event_listener::EventListener;
+use crate::mq::connection::MqConnection;
 use crate::mq::manager::MqManager;
+use crate::mq::message::Message;
+use crate::services::serializer::Serializer;
 
-pub struct MqEventBus<B, EL>
-    where
-        B: MqManager,
-        EL: EventListener + Send + Sync + 'static
-{
-    broker: B,
-    listeners: Vec<EL>,
+pub struct MqEventBus {
+    broker: Arc<MqManager>,
+    serializer: Serializer,
+    listeners: Arc<Mutex<Vec<Box<dyn EventListener>>>>,
 }
 
-impl<B, EL> MqEventBus<B, EL>
-    where
-        B: MqManager,
-        EL: EventListener + Send + Sync + 'static
-{
-    pub fn new(broker: B, listeners: Vec<EL>) -> Self {
+impl MqEventBus {
+    pub fn new(broker: Arc<MqManager>, serializer: Serializer, listeners: Arc<Mutex<Vec<Box<dyn EventListener>>>>) -> Self {
         Self {
             broker,
+            serializer,
             listeners,
         }
     }
 }
 
-impl<B, EL> MqEventBus<B, EL>
-    where
-        B: MqManager,
-        EL: EventListener + Send + Sync + 'static
-{
-    pub fn register(&mut self, listener: EL) {
-        self.listeners.push(listener);
-    }
+#[async_trait]
+impl EventBus for MqEventBus {
+    async fn publish(&mut self, event: Event) -> Result<(), crate::errors::Error> {
+        let data = self.serializer.serialize(&event)?;
+        let message = Message::new(data);
 
-    pub fn publish<E>(&self, event: E)
-        where
-            E: Event,
-    {
-        for listener in &self.listeners {
-            listener.on_event(event.clone());
+        self.broker.connection().send(message).await?;
+
+        let mut listeners = self.listeners.lock().await;
+
+        for listener in listeners.iter_mut() {
+           if event.name() == listener.event_name() {
+               listener.on_event(event.clone()).await?;
+           }
         }
 
-
+        Ok(())
     }
 }

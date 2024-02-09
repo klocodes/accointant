@@ -2,7 +2,6 @@ use actix_web::{get, HttpResponse, Responder};
 use actix_web::web::{Data, Query};
 use serde::Deserialize;
 
-use crate::db::connection::manager::ConnectionManager;
 use crate::di::service_container::ServiceContainer;
 use crate::errors::Error;
 use crate::features::auth::application::confirm::ConfirmRegistration;

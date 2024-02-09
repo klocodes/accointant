@@ -10,7 +10,7 @@ pub trait Command {
 
 #[async_trait]
 pub trait CommandHandler<C: Command>: Send + Sync {
-    async fn handle(&self, command: C) -> Result<(), Error>;
+    async fn handle(&mut self, command: C) -> Result<(), Error>;
 }
 
 pub struct CommandBus<C, H>
@@ -38,10 +38,10 @@ impl<C, H> CommandBus<C, H>
         self.handlers.insert(C::name().to_string(), handler);
     }
 
-    pub async fn dispatch(&self, command: C) -> Result<(), Error> {
+    pub async fn dispatch(&mut self, command: C) -> Result<(), Error> {
         let name = C::name();
 
-        let handler = self.handlers.get(name).ok_or(
+        let handler = self.handlers.get_mut(name).ok_or(
             Error::Server(
                 InternalServerError {
                     context: Some(

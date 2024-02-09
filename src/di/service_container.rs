@@ -1,31 +1,36 @@
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use crate::config::manager::ConfigManager;
-use crate::db::connection::manager::ConnectionManager;
-use crate::db::db_manager::DbManager;
-use crate::db::transaction::pg_manager::PgTransactionManager;
+use crate::db::factory::DbFactory;
+use crate::db::manager::DbManager;
 use crate::errors::Error;
+use crate::mq::manager::MqManager;
 use crate::services::hasher::{BcryptHasher, Hasher};
 use crate::services::http_client::{HttpClient, ReqwestClient};
 use crate::services::jwt::{JsonwebtokenLibService, JwtService};
 use crate::services::mailer::{LettreMailer, Mailer};
-use crate::services::serializer::{CborSerializer, Serializer};
+use crate::services::serializer::Serializer;
 use crate::services::templater::{HandlebarsTemplater, Templater};
 use crate::services::tokenizer::{SymbolsTokenizer, Tokenizer};
 
-#[derive(Clone, Debug)]
 pub struct ServiceContainer {
     config: ConfigManager,
-    db_manager: DbManager,
+    db_manager: Arc<Mutex<DbManager>>,
+    mq_manager: Arc<MqManager>,
 }
 
 impl ServiceContainer {
-    pub async fn new(config: ConfigManager) -> Result<Self, Error> {
-        let db_manager = DbManager::new(config.db()).await?;
+    pub async fn new(
+        config: ConfigManager,
+    ) -> Result<Self, Error> {
+        let db_manager = DbFactory::create(config.db()).await?;
+        let mq_manager = MqManager::new(config.mq()).await?;
 
 
         Ok(Self {
             config: config.clone(),
-            db_manager,
+            db_manager: Arc::new(Mutex::new(db_manager)),
+            mq_manager: Arc::new(mq_manager),
         })
     }
 
@@ -33,7 +38,7 @@ impl ServiceContainer {
         &self.config
     }
 
-    pub fn db_manager(&self) -> DbManager {
+    pub fn db_manager(&self) -> Arc<Mutex<DbManager>> {
         self.db_manager.clone()
     }
 
@@ -53,8 +58,12 @@ impl ServiceContainer {
         LettreMailer::new(self.config.mailer())
     }
 
-    pub fn serializer(&self) -> impl Serializer {
-        CborSerializer::new()
+    pub fn mq_manager(&self) -> Arc<MqManager> {
+        self.mq_manager.clone()
+    }
+
+    pub fn serializer(&self) -> Serializer {
+        Serializer::Cbor
     }
 
     pub fn templater(&self) -> Result<impl Templater, Error> {

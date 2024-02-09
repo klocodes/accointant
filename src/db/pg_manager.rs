@@ -1,27 +1,41 @@
-use async_trait::async_trait;
-use sqlx::{PgPool, Pool, Postgres, Transaction};
-use crate::db::transaction::manager::TransactionManager;
+use std::time::Duration;
+use sqlx::{Pool, Postgres, Transaction};
+use sqlx::postgres::PgPoolOptions;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 
 #[derive(Debug)]
-pub struct PgTransactionManager<'a> {
-    tx: Option<Transaction<'a, Postgres>>,
+pub struct PgManager {
+    pool: Pool<Postgres>,
+    tx: Option<Transaction<'static, Postgres>>,
 }
 
-impl<'a> PgTransactionManager<'a> {
-    pub fn new() -> Self {
-        Self { tx: None }
+impl PgManager {
+    pub async fn connect(url: &str, timeout: Duration, max_connections: u32) -> Result<Self, Error> {
+        let pool = PgPoolOptions::new()
+            .acquire_timeout(timeout)
+            .max_connections(max_connections)
+            .connect(url)
+            .await
+            .map_err(|e| {
+                Error::Server(InternalServerError {
+                    context: Some(
+                        format!("Failed to connect to database: {}", e.to_string()).into()
+                    )
+                })
+            })?;
+
+        Ok(Self {
+            pool,
+            tx: None,
+        })
     }
-}
 
-#[async_trait]
-impl<'a> TransactionManager for PgTransactionManager<'a> {
-    type Pool = Pool<Postgres>;
+    pub fn pool(&self) -> Result<Pool<Postgres>, Error> {
+        Ok(self.pool.clone())
+    }
 
-    type Transaction = Transaction<'a, Postgres>;
-
-    async fn begin(&mut self, pool: Self::Pool) -> Result<(), Error> {
+    pub(crate) async fn begin(&mut self, pool: Pool<Postgres>) -> Result<(), Error> {
         let tx = pool.begin().await.map_err(|e| {
             Error::Server(InternalServerError {
                 context: Some(
@@ -35,7 +49,7 @@ impl<'a> TransactionManager for PgTransactionManager<'a> {
         Ok(())
     }
 
-    async fn get(&mut self) -> Result<&mut Self::Transaction, Error> {
+    pub async fn transaction(&mut self) -> Result<&mut Transaction<'static, Postgres>, Error> {
         let tx = self.tx.as_mut().ok_or(
             Error::Server(
                 InternalServerError {
@@ -47,8 +61,8 @@ impl<'a> TransactionManager for PgTransactionManager<'a> {
         Ok(tx)
     }
 
-    async fn commit(mut self) -> Result<(), Error> {
-        let tx = self.tx.ok_or(
+    pub async fn commit(&mut self) -> Result<(), Error> {
+        let tx = self.tx.take().ok_or(
             Error::Server(
                 InternalServerError {
                     context: Some("Transaction has not started".into())
@@ -66,13 +80,11 @@ impl<'a> TransactionManager for PgTransactionManager<'a> {
             )
         })?;
 
-        self.tx = None;
-
         Ok(())
     }
 
-    async fn rollback(mut self) -> Result<(), Error> {
-        let tx = self.tx.ok_or(
+    pub async fn rollback(&mut self) -> Result<(), Error> {
+        let tx = self.tx.take().ok_or(
             Error::Server(
                 InternalServerError {
                     context: Some("Transaction has not started".into())
@@ -89,8 +101,6 @@ impl<'a> TransactionManager for PgTransactionManager<'a> {
                 }
             )
         })?;
-
-        self.tx = None;
 
         Ok(())
     }

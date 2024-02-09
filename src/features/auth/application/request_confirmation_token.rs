@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use uuid::Uuid;
-use crate::db::transaction::container::TransactionContainer;
-use crate::db::transaction::manager::TransactionManager as TransactionManagerTrait;
+use crate::db::manager::DbManager;
 
 use crate::errors::client::ClientErrors::{BadRequest};
 use crate::errors::Error;
@@ -15,7 +16,7 @@ pub struct RequestConfirmationToken;
 
 impl RequestConfirmationToken {
     pub async fn exec<M>(
-        mut transaction_container: TransactionContainer<'_>,
+        mut db_manager: Arc<Mutex<DbManager>>,
         rep: impl UserRepository,
         tokenizer: impl Tokenizer,
         mailer: M,
@@ -42,7 +43,7 @@ impl RequestConfirmationToken {
         let token = tokenizer.generate()?;
         user.request_confirmation(token.clone())?;
 
-        rep.update_confirmation_token(&mut transaction_container, user.clone()).await?;
+        rep.update_confirmation_token(user.clone()).await?;
 
         let mut body_data = HashMap::new();
         let url = format!(
@@ -57,12 +58,16 @@ impl RequestConfirmationToken {
         let res = mailer.send(email, subject, body).await;
 
         if let Err(e) = res {
-            transaction_container.take_manager().rollback().await?;
+            let mut guard = db_manager.lock().await;
+
+            guard.rollback().await?;
 
             return Err(e);
         }
 
-        transaction_container.take_manager().commit().await?;
+        let mut guard = db_manager.lock().await;
+
+        guard.commit().await?;
 
         Ok(())
     }
