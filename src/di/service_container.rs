@@ -1,8 +1,8 @@
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use crate::config::manager::ConfigManager;
-use crate::db::connection::manager::ConnectionManager;
-use crate::db2::connection::manager::ConnectionManager as ConnectionManager2;
-use crate::db::db_manager::DbManager;
+use crate::db::factory::DbFactory;
+use crate::db::manager::DbManager;
 use crate::errors::Error;
 use crate::mq::manager::MqManager;
 use crate::services::hasher::{BcryptHasher, Hasher};
@@ -15,25 +15,22 @@ use crate::services::tokenizer::{SymbolsTokenizer, Tokenizer};
 
 pub struct ServiceContainer {
     config: ConfigManager,
-    db_manager: Arc<DbManager>,
+    db_manager: Arc<Mutex<DbManager>>,
     mq_manager: Arc<MqManager>,
-    db_connection: Arc<Box< dyn crate::db2::connection::manager::ConnectionManager>>,
 }
 
 impl ServiceContainer {
     pub async fn new(
         config: ConfigManager,
-        db_connection: Arc<Box<dyn ConnectionManager2>>,
     ) -> Result<Self, Error> {
-        let db_manager = DbManager::new(config.db()).await?;
+        let db_manager = DbFactory::create(config.db()).await?;
         let mq_manager = MqManager::new(config.mq()).await?;
 
 
         Ok(Self {
             config: config.clone(),
-            db_manager: Arc::new(db_manager),
+            db_manager: Arc::new(Mutex::new(db_manager)),
             mq_manager: Arc::new(mq_manager),
-            db_connection: db_connection.clone(),
         })
     }
 
@@ -41,7 +38,7 @@ impl ServiceContainer {
         &self.config
     }
 
-    pub fn db_manager(&self) -> Arc<DbManager> {
+    pub fn db_manager(&self) -> Arc<Mutex<DbManager>> {
         self.db_manager.clone()
     }
 

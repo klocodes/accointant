@@ -1,9 +1,8 @@
+use std::sync::Arc;
 use async_trait::async_trait;
 use sqlx::query;
-use crate::db::connection::manager::ConnectionManager;
-use crate::db::db_manager::DbManager;
-use crate::db::transaction::container::TransactionContainer;
-use crate::db::transaction::manager::TransactionManager;
+use tokio::sync::Mutex;
+use crate::db::manager::DbManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::operations::domain::events::operation_created::OperationCreated;
@@ -13,14 +12,14 @@ use crate::services::serializer::Serializer;
 use crate::support::data_mapper::DataMapper;
 
 pub struct DbOperationRepository {
-    db: DbManager,
+    db_manager: Arc<Mutex<DbManager>>,
     serializer: Serializer,
 }
 
 impl DbOperationRepository {
-    pub fn new(db: DbManager, serializer: Serializer) -> Self {
+    pub fn new(db_manager: Arc<Mutex<DbManager>>, serializer: Serializer) -> Self {
         Self {
-            db,
+            db_manager,
             serializer,
         }
     }
@@ -28,7 +27,7 @@ impl DbOperationRepository {
 
 #[async_trait]
 impl OperationRepository for DbOperationRepository {
-    async fn persist_operation_created_event(&self, transaction_container: &mut TransactionContainer, event_data: OperationCreated) -> Result<(), Error> {
+    async fn persist_operation_created_event(&self, event_data: OperationCreated) -> Result<(), Error> {
         let fields_str = "id, operation_id, category_id, user_id, kind, amount, amount_currency, currency, rate, label, created_at";
         let args_str = "$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11";
         let q = format!("INSERT INTO operations_created ({}) VALUES ({})", fields_str, args_str);
@@ -48,12 +47,8 @@ impl OperationRepository for DbOperationRepository {
             .bind(operation_schema.label())
             .bind(operation_schema.created_at());
 
-        let pool = self.db.connection_manager()
-            .await?
-            .pool()
-            .await?;
-
-        transaction_container.get_manager().begin(pool).await.map_err(|e| {
+        let mut guard = self.db_manager.lock().await;
+        guard.begin().await.map_err(|e| {
             Error::Server(
                 InternalServerError {
                     context: Some(
@@ -63,8 +58,7 @@ impl OperationRepository for DbOperationRepository {
             )
         })?;
 
-        let tx = transaction_container.get_manager().get().await?;
-
+        let tx = guard.transaction().await?;
 
         res_query.execute(&mut **tx).await.map_err(|e| {
             Error::Server(

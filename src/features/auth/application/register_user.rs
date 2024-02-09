@@ -1,6 +1,7 @@
 use std::collections::HashMap;
-use crate::db::transaction::container::TransactionContainer;
-use crate::db::transaction::manager::TransactionManager as TransactionManagerTrait;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use crate::db::manager::DbManager;
 use crate::errors::client::ClientErrors;
 use crate::errors::Error;
 use crate::features::auth::application::dto::user_data::UserData;
@@ -16,7 +17,7 @@ pub struct RegisterUser;
 
 impl RegisterUser {
     pub async fn exec(
-        mut transaction_container: TransactionContainer<'_>,
+        db_manager: Arc<Mutex<DbManager>>,
         rep: impl UserRepository,
         hasher: impl Hasher,
         tokenizer: impl Tokenizer,
@@ -47,7 +48,7 @@ impl RegisterUser {
         );
         let user = User::register(user_data.clone())?;
 
-        let _ = rep.create(&mut transaction_container, &user).await?;
+        let _ = rep.create(&user).await?;
 
         let mut body_data = HashMap::new();
         let url = format!(
@@ -60,12 +61,14 @@ impl RegisterUser {
         let res = mailer.send(user.email().value().to_string(), "Confirmation email".to_string(), body).await;
 
         if let Err(e) = res {
-            transaction_container.take_manager().rollback().await?;
+            let mut guard = db_manager.lock().await;
+            guard.rollback().await?;
 
             return Err(e);
         }
 
-        transaction_container.take_manager().commit().await?;
+        let mut guard = db_manager.lock().await;
+        guard.commit().await?;
 
         Ok(())
     }

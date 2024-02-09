@@ -1,3 +1,3 @@
-pub mod connection;
-pub mod db_manager;
-pub mod transaction;
+pub mod factory;
+pub mod manager;
+pub mod pg_manager;

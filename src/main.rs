@@ -2,7 +2,6 @@ use std::sync::Arc;
 use actix::Actor;
 
 use crate::config::manager::ConfigManager;
-use crate::db2::factory::DbFactory;
 use crate::di::service_container::ServiceContainer;
 use crate::events::event_bus::EventBus;
 use crate::events::event_bus_factory::EventBusFactory;
@@ -11,7 +10,6 @@ use crate::log::logger;
 
 mod config;
 mod db;
-mod db2;
 mod di;
 mod errors;
 mod features;
@@ -26,10 +24,7 @@ mod events;
 async fn main() {
     let config = ConfigManager::new();
 
-    let db_connection = DbFactory::create_connection(config.db()).await.expect("Failed to create db2 connection");
-    let db_connection = Box::new(db_connection);
-
-    let service_container = ServiceContainer::new(config, Arc::new(db_connection)).await.expect("Failed to create service container");
+    let service_container = ServiceContainer::new(config).await.expect("Failed to create service container");
     let service_container = Arc::new(service_container);
 
     let _guard = logger::init(service_container.config().log().clone());

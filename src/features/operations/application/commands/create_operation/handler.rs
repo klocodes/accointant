@@ -1,8 +1,6 @@
 use async_trait::async_trait;
-use crate::db::transaction::container::TransactionContainer;
-use crate::db::transaction::manager::TransactionManager;
+use crate::db::manager::DbManager;
 use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
 use crate::events::event::Event;
 use crate::events::event_bus::EventBus;
 use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
@@ -12,26 +10,26 @@ use crate::features::operations::domain::operation_repository::OperationReposito
 use crate::support::command_bus::CommandHandler;
 
 #[derive(Debug)]
-pub struct CreateOperationCommandHandler<'a, R, EB>
+pub struct CreateOperationCommandHandler<R, EB>
     where
         R: OperationRepository + Send + Sync,
         EB: EventBus,
 {
     rep: R,
-    transaction_container: Option<TransactionContainer<'a>>,
+    db_manager: DbManager,
     event_bus: EB,
 }
 
-impl<R, EB> CreateOperationCommandHandler<'_, R, EB>
+impl<R, EB> CreateOperationCommandHandler<R, EB>
     where
         R: OperationRepository + Send + Sync,
         EB: EventBus,
 {
-    pub fn new(rep: R, transaction_container: TransactionContainer<'static>, event_bus: EB) -> Self {
+    pub fn new(db_manager: DbManager, rep: R, event_bus: EB) -> Self {
         Self {
             rep,
-            transaction_container: Some(transaction_container),
-            event_bus
+            db_manager,
+            event_bus,
         }
     }
 
@@ -41,7 +39,7 @@ impl<R, EB> CreateOperationCommandHandler<'_, R, EB>
 }
 
 #[async_trait]
-impl<R, EB> CommandHandler<CreateOperationCommand> for CreateOperationCommandHandler<'_, R, EB>
+impl<R, EB> CommandHandler<CreateOperationCommand> for CreateOperationCommandHandler<R, EB>
     where
         R: OperationRepository + Send + Sync,
         EB: EventBus,
@@ -52,17 +50,7 @@ impl<R, EB> CommandHandler<CreateOperationCommand> for CreateOperationCommandHan
         for event in events {
             let has_operation_created = match event {
                 OperationEvent::OperationCreated(ref operation_created) => {
-                    let tc = self.transaction_container.as_mut().ok_or(
-                        Error::Server(
-                            InternalServerError {
-                                context: Some(
-                                    "Transaction container not found".into()
-                                )
-                            }
-                        )
-                    )?;
-
-                    self.rep.persist_operation_created_event(tc, operation_created.clone()).await?;
+                    self.rep.persist_operation_created_event(operation_created.clone()).await?;
 
                     true
                 }
@@ -72,22 +60,12 @@ impl<R, EB> CommandHandler<CreateOperationCommand> for CreateOperationCommandHan
             let res = self.event_bus.publish(Event::OperationEvent(event.clone())).await;
 
             if has_operation_created {
-                let mut tc = self.transaction_container.take().ok_or(
-                    Error::Server(
-                        InternalServerError {
-                            context: Some(
-                                "Transaction container not found".into()
-                            )
-                        }
-                    )
-                )?;
-
                 match res {
                     Ok(_) => {
-                        tc.take_manager().commit().await?;
+                        self.db_manager.commit().await?;
                     }
                     Err(e) => {
-                        tc.take_manager().rollback().await?;
+                        self.db_manager.rollback().await?;
 
                         return Err(e);
                     }
@@ -96,5 +74,45 @@ impl<R, EB> CommandHandler<CreateOperationCommand> for CreateOperationCommandHan
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db::manager::MockManager;
+    use crate::events::event_bus::MockEventBus;
+    use crate::features::operations::domain::operation_repository::MockOperationRepository;
+    use crate::features::shared::id::Id;
+    use super::*;
+
+    #[tokio::test]
+    async fn test_handle_success() {
+        let rep = MockOperationRepository::new(false);
+        let event_bus = MockEventBus::new(false);
+        let db_manager = DbManager::Mock(MockManager::new(false));
+
+        let command = command_fixture();
+        let mut handler = CreateOperationCommandHandler::new(db_manager, rep, event_bus);
+
+        let res = handler.handle(command).await;
+
+        assert!(res.is_ok());
+    }
+
+
+
+    fn command_fixture() -> CreateOperationCommand {
+        CreateOperationCommand::new(
+            String::from("Income"),
+            Id::generate(),
+            Some(Id::generate()),
+            String::from("Food"),
+            100.0,
+            String::from("USD"),
+            100.0,
+            1.0,
+            String::from("Grocery Shopping"),
+            vec![],
+        )
     }
 }
