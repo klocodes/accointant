@@ -31,7 +31,7 @@ tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "chrono"] }
 uuid = { version = "1.7", features = ["v4", "fast-rng", "macro-diagnostics", "serde"] }
 validator = { version = "0.16", features = ["derive"] }
-handlebars = "5.1.1"
+handlebars = "5.1"
 regex = "1.10.2"
 rand = "0.8.5"
 mockall = "0.12.1"
@@ -41,3 +41,4 @@ reqwest = "0.11.23"
 lapin = "2.3.1"
 tokio-executor-trait = "2.1.1"
 tokio-reactor-trait = "1.1.0"
+env_logger = { version = "0.11.1", features = [] }

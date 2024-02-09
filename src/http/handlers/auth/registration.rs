@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use actix_web::{post, HttpResponse, Responder};
 use actix_web::web::{Data, Json};
 use serde::Deserialize;
@@ -38,7 +39,7 @@ impl RequestData {
 }
 
 #[post("/register")]
-async fn register(data: Json<RequestData>, state: Data<ServiceContainer>) -> Result<impl Responder, Error> {
+async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, Error> {
     if let Err(e) = data.validate() {
         return Err(Error::Client(ClientErrors::BadRequest { message: Some(e.to_string().into()) }));
     }

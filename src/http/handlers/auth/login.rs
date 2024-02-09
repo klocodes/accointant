@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use actix_web::{HttpResponse, post, Responder};
 use actix_web::web::{Data, Json};
 use serde::Deserialize;
@@ -27,7 +28,7 @@ impl RequestData {
 }
 
 #[post("/login")]
-async fn login(data: Json<RequestData>, state: Data<ServiceContainer>) -> Result<impl Responder, Error> {
+async fn login(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, Error> {
 
     let service_container = state.into_inner();
 

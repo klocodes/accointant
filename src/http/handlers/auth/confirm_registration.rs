@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use actix_web::{get, HttpResponse, Responder};
 use actix_web::web::{Data, Query};
 use serde::Deserialize;
@@ -24,7 +25,7 @@ impl RequestData {
 }
 
 #[get("/confirm")]
-async fn confirm(request_data: Query<RequestData>, state: Data<ServiceContainer>) -> Result<impl Responder, Error> {
+async fn confirm(request_data: Query<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, Error> {
     let service_container = state.into_inner();
 
     let db_manager = service_container.db_manager();

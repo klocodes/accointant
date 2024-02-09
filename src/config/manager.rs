@@ -42,6 +42,7 @@ impl ConfigManager {
             "general.toml",
             "log.toml",
             "mailer.toml",
+            "mq.toml",
             "server.toml",
             "templater.toml",
         ];
