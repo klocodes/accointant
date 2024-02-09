@@ -99,8 +99,6 @@ mod tests {
         assert!(res.is_ok());
     }
 
-
-
     fn command_fixture() -> CreateOperationCommand {
         CreateOperationCommand::new(
             String::from("Income"),
@@ -114,5 +112,19 @@ mod tests {
             String::from("Grocery Shopping"),
             vec![],
         )
+    }
+
+    #[tokio::test]
+    async fn test_handle_error() {
+        let rep = MockOperationRepository::new(true);
+        let event_bus = MockEventBus::new(true);
+        let db_manager = DbManager::Mock(MockManager::new(true));
+
+        let command = command_fixture();
+        let mut handler = CreateOperationCommandHandler::new(db_manager, rep, event_bus);
+
+        let res = handler.handle(command).await;
+
+        assert!(res.is_err());
     }
 }
