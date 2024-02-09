@@ -1,5 +1,5 @@
 use actix_web::web;
-use actix_web::web::{scope, service, ServiceConfig};
+use actix_web::web::{scope, ServiceConfig};
 use crate::http::handlers::account::profile;
 use crate::http::handlers::auth::{confirm_registration, login, registration, request_confirmation_token};
 use crate::http::handlers::errors::not_found;

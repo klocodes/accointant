@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use actix_web::{HttpResponse, post, Responder};
 use actix_web::web::{Data, Path};
 use serde::Deserialize;
@@ -10,7 +11,7 @@ use crate::services::templater::Templater;
 #[derive(Debug, Deserialize)]
 pub struct UserId(String);
 #[post("/auth/request-confirmation-token/{id}")]
-async fn request(user_id: Path<UserId>, state: Data<ServiceContainer>) -> Result<impl Responder, Error> {
+async fn request(user_id: Path<UserId>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, Error> {
     let service_container  = state.into_inner();
 
     let db_manager = service_container.db_manager();
