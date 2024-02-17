@@ -3,6 +3,7 @@ use async_trait::async_trait;
 
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
+use crate::events::event::Event;
 
 pub trait Command {
     fn name() -> &'static str;
@@ -10,7 +11,7 @@ pub trait Command {
 
 #[async_trait]
 pub trait CommandHandler<C: Command>: Send + Sync {
-    async fn handle(&mut self, command: C) -> Result<(), Error>;
+    async fn handle(&mut self, command: C) -> Result<Vec<Event>, Error>;
 }
 
 pub struct CommandBus<C, H>
@@ -38,7 +39,7 @@ impl<C, H> CommandBus<C, H>
         self.handlers.insert(C::name().to_string(), handler);
     }
 
-    pub async fn dispatch(&mut self, command: C) -> Result<(), Error> {
+    pub async fn dispatch(&mut self, command: C) -> Result<Vec<Event>, Error> {
         let name = C::name();
 
         let handler = self.handlers.get_mut(name).ok_or(
@@ -51,8 +52,6 @@ impl<C, H> CommandBus<C, H>
             )
         )?;
 
-        let _ = handler.handle(command).await?;
-
-        Ok(())
+        handler.handle(command).await
     }
 }
