@@ -29,8 +29,15 @@ async fn main() {
 
     let _guard = logger::init(service_container.config().log().clone());
 
-    let event_bus = EventBusFactory::create(service_container.clone()).await.expect("Failed to create event bus");
-    let event_bus = Arc::new(event_bus);
+    let (event_bus, receiver) = EventBusFactory::create(service_container.clone()).await.expect("Failed to create event bus");
+
+    let event_bus_clone = event_bus.clone();
+    tokio::spawn(async move {
+        if let Err(e) = event_bus_clone.start(receiver).await {
+            log_error!("{}", e.to_string());
+            log_trace!("{}", e.to_string());
+        }
+    });
 
     server::run(service_container, event_bus)
         .await

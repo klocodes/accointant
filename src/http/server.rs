@@ -9,7 +9,7 @@ use crate::http::routes::Routes;
 
 pub async fn run(
     service_container: Arc<ServiceContainer>,
-    event_bus: Arc<impl EventBus>,
+    event_bus: Arc<Box<dyn EventBus>>,
 ) -> std::io::Result<()> {
     let cfg = service_container.config().server().clone();
 
