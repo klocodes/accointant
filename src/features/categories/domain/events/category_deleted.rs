@@ -1,0 +1,1 @@
+pub const CATEGORY_DELETED_NAME: &str = "category_deleted";

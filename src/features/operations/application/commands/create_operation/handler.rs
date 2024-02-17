@@ -16,7 +16,6 @@ pub struct CreateOperationCommandHandler<R, EB>
         EB: EventBus,
 {
     rep: R,
-    db_manager: DbManager,
     event_bus: EB,
 }
 
@@ -25,10 +24,9 @@ impl<R, EB> CreateOperationCommandHandler<R, EB>
         R: OperationRepository + Send + Sync,
         EB: EventBus,
 {
-    pub fn new(db_manager: DbManager, rep: R, event_bus: EB) -> Self {
+    pub fn new(rep: R, event_bus: EB) -> Self {
         Self {
             rep,
-            db_manager,
             event_bus,
         }
     }
@@ -44,11 +42,12 @@ impl<R, EB> CommandHandler<CreateOperationCommand> for CreateOperationCommandHan
         R: OperationRepository + Send + Sync,
         EB: EventBus,
 {
-    async fn handle(&mut self, command: CreateOperationCommand) -> Result<(), Error> {
-        let events = Operation::handle_creation(command)?;
+    async fn handle(&mut self, command: CreateOperationCommand) -> Result<Vec<Event>, Error> {
+        let mut events = vec![];
+        let operation_events = Operation::handle_creation(command)?;
 
-        for event in events {
-            let has_operation_created = match event {
+        for event in operation_events {
+            match event {
                 OperationEvent::OperationCreated(ref operation_created) => {
                     self.rep.persist_operation_created_event(operation_created.clone()).await?;
 
@@ -57,23 +56,10 @@ impl<R, EB> CommandHandler<CreateOperationCommand> for CreateOperationCommandHan
                 _ => false
             };
 
-            let res = self.event_bus.publish(Event::OperationEvent(event.clone())).await;
-
-            if has_operation_created {
-                match res {
-                    Ok(_) => {
-                        self.db_manager.commit().await?;
-                    }
-                    Err(e) => {
-                        self.db_manager.rollback().await?;
-
-                        return Err(e);
-                    }
-                }
-            }
+           events.push(Event::OperationEvent(event));
         }
 
-        Ok(())
+        Ok(events)
     }
 }
 

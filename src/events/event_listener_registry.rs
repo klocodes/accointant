@@ -28,12 +28,14 @@ impl EventListenerRegistry {
 
 
         let category_creation_requested_listener = CategoryCreationRequestedListener::new(
-            &mut self.service_container.command_bus(),
+            Arc::new(Mutex::new(
+                self.service_container.command_bus()
+            )),
             DbCategoryRepository::new(
                 self.service_container.db_manager().clone(),
                 self.service_container.serializer(),
             ),
-        );
+        ).await;
 
         guard.push(
             Box::new(category_creation_requested_listener),

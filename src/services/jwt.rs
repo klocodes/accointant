@@ -1,6 +1,7 @@
 use jsonwebtoken::{decode, DecodingKey, encode, EncodingKey, Header, Validation};
 use jsonwebtoken::errors::ErrorKind;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use crate::config::structs::auth::AuthConfig;
 use crate::errors::client::ClientErrors::BadRequest;
 use crate::errors::Error;
@@ -29,6 +30,18 @@ impl Claims {
 
     pub fn sub(&self) -> &str {
         &self.sub
+    }
+
+    pub fn user_id(&self) -> Result<Uuid, Error> {
+        Uuid::parse_str(&self.sub()).map_err(|e| {
+            Error::Server(
+                InternalServerError {
+                    context: Some(
+                        format!("Failed to parse user id from sub: {}", e.to_string()).into()
+                    )
+                }
+            )
+        })
     }
 
     pub fn exp(&self) -> &usize {
