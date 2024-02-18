@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use tracing_appender::{non_blocking};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};

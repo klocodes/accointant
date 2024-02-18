@@ -8,12 +8,10 @@ pub trait OperationRepository {
     async fn persist_operation_created_event(&self, event_data: OperationCreated) -> Result<(), Error>;
 }
 
-#[cfg(test)]
 pub struct MockOperationRepository {
     has_error: bool,
 }
 
-#[cfg(test)]
 impl MockOperationRepository {
     pub fn new(has_error: bool) -> Self {
         Self {
@@ -22,10 +20,9 @@ impl MockOperationRepository {
     }
 }
 
-#[cfg(test)]
 #[async_trait]
 impl OperationRepository for MockOperationRepository {
-    async fn persist_operation_created_event(&self, event_data: OperationCreated) -> Result<(), Error> {
+    async fn persist_operation_created_event(&self, _event_data: OperationCreated) -> Result<(), Error> {
         if self.has_error {
             return Err(Error::Server(
                 InternalServerError {

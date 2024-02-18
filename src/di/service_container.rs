@@ -12,6 +12,7 @@ use crate::services::mailer::{LettreMailer, Mailer};
 use crate::services::serializer::Serializer;
 use crate::services::templater::{HandlebarsTemplater, Templater};
 use crate::services::tokenizer::{SymbolsTokenizer, Tokenizer};
+use crate::support::command_bus::{Command, CommandBus, CommandHandler};
 
 pub struct ServiceContainer {
     config: ConfigManager,
@@ -36,6 +37,14 @@ impl ServiceContainer {
 
     pub fn config(&self) -> &ConfigManager {
         &self.config
+    }
+
+    pub fn command_bus<C, H>(&self) -> CommandBus<C, H>
+        where
+            C: 'static + Send + Sync + Command,
+            H: 'static + Send + Sync + CommandHandler<C>,
+    {
+        CommandBus::new()
     }
 
     pub fn db_manager(&self) -> Arc<Mutex<DbManager>> {

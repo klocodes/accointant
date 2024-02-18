@@ -16,7 +16,7 @@ pub struct RequestConfirmationToken;
 
 impl RequestConfirmationToken {
     pub async fn exec<M>(
-        mut db_manager: Arc<Mutex<DbManager>>,
+        db_manager: Arc<Mutex<DbManager>>,
         rep: impl UserRepository,
         tokenizer: impl Tokenizer,
         mailer: M,

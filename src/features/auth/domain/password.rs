@@ -1,4 +1,3 @@
-use bcrypt;
 use serde::{Deserialize, Serialize};
 use crate::errors::client::ClientErrors::DomainError;
 use crate::errors::Error;
