@@ -18,7 +18,7 @@ struct RequestData {
 }
 
 #[post("/category")]
-async fn create(
+pub async fn create_category(
     request_data: Json<RequestData>,
     jwt: Jwt,
     service_container: Data<Arc<ServiceContainer>>,
