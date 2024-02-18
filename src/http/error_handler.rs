@@ -1,5 +1,5 @@
 use actix_web::http::StatusCode;
-use actix_web::{HttpResponse, ResponseError, Error as ActixError};
+use actix_web::{HttpResponse, ResponseError};
 
 use crate::errors::Error;
 use crate::errors::client::ClientErrors;

@@ -151,7 +151,7 @@ impl UserRepository for DbUserRepository {
 
     async fn update_confirmation_token(&self, user: User) -> Result<(), Error> {
         let q = "UPDATE users SET confirmation_token = $1, confirmation_token_expires_at = $2, updated_at = $3 WHERE id = $4";
-        let mut res_query = query(q)
+        let res_query = query(q)
             .bind(user.confirmation_token().value())
             .bind(user.confirmation_token().expires_at())
             .bind(user.updated_at())

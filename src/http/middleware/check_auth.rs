@@ -1,7 +1,6 @@
 use std::future::{ready, Ready};
-use std::ops::Deref;
 use std::sync::Arc;
-use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Either, Error, HttpResponse};
+use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error};
 use actix_web::body::BoxBody;
 use actix_web::web::Data;
 use futures_util::future::LocalBoxFuture;

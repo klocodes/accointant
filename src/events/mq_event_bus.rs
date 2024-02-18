@@ -70,7 +70,7 @@ impl EventBus for MqEventBus {
                     let events = listener.on_event(event.clone()).await?;
 
                     for event in events {
-                        let mut guard = self.queue.lock().await;
+                        let guard = self.queue.lock().await;
 
                         guard.send(event)
                             .await

@@ -1,6 +1,5 @@
 use async_trait::async_trait;
-use futures_util::TryStreamExt;
-use lettre::{AsyncSmtpTransport, AsyncTransport, Executor, Message, Tokio1Executor, Transport};
+use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use lettre::address::AddressError;
 use lettre::message::{Mailbox, SinglePart};
 use lettre::message::header::ContentType;

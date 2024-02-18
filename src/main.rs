@@ -1,9 +1,7 @@
 use std::sync::Arc;
-use actix::Actor;
 
 use crate::config::manager::ConfigManager;
 use crate::di::service_container::ServiceContainer;
-use crate::events::event_bus::EventBus;
 use crate::events::event_bus_factory::EventBusFactory;
 use crate::http::server;
 use crate::log::logger;

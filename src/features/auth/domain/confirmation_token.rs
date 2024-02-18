@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 pub const EXPIRATION_HOURS: i64 = 24;
@@ -36,7 +36,7 @@ impl ConfirmationToken {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
+    use chrono::{Duration, Utc};
 
     #[test]
     fn token_new_creates_valid_instance() {

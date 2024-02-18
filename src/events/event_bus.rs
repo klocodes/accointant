@@ -11,12 +11,10 @@ pub trait EventBus: Send + Sync + 'static {
     async fn start(&self, receiver: Receiver<Event>) -> Result<(), Error>;
 }
 
-#[cfg(test)]
 pub struct MockEventBus {
     has_error: bool,
 }
 
-#[cfg(test)]
 impl MockEventBus {
     pub fn new(has_error: bool) -> Self {
         Self {
@@ -25,7 +23,6 @@ impl MockEventBus {
     }
 }
 
-#[cfg(test)]
 #[async_trait]
 impl EventBus for MockEventBus {
     async fn publish(&self, _event: Event) -> Result<(), Error> {

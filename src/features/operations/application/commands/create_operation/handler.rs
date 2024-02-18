@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use crate::errors::Error;
 use crate::events::event::Event;
-use crate::events::event_bus::EventBus;
 use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
 use crate::features::operations::domain::events::operation_event::OperationEvent;
 use crate::features::operations::domain::operation::Operation;
