@@ -2,21 +2,31 @@ use std::sync::Arc;
 use actix_web::{get, HttpResponse, Responder};
 use actix_web::web::{Data, Query};
 use serde::Deserialize;
+use uuid::Uuid;
 
 use crate::di::service_container::ServiceContainer;
+use crate::errors::client::ClientErrors::BadRequest;
 use crate::errors::Error;
 use crate::features::auth::application::confirm::ConfirmRegistration;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
 
 #[derive(Deserialize)]
 pub struct RequestData {
-    email: String,
+    id: String,
     token: String,
 }
 
 impl RequestData {
-    pub fn email(&self) -> &str {
-        &self.email
+    pub fn id(&self) -> Result<Uuid, Error> {
+        Uuid::parse_str(&self.id).map_err(|e|
+            Error::Client(
+                BadRequest {
+                    message: Some(
+                        format!("Failed to parse id: {}", e.to_string()).into()
+                    )
+                }
+            )
+        )
     }
 
     pub fn token(&self) -> &str {

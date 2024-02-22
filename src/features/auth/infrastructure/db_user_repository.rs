@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use sqlx::{query, query_as, Row};
 use tokio::sync::Mutex;
 use uuid::Uuid;
-use crate::db::manager::DbManager;
 
+use crate::db::manager::DbManager;
 use crate::errors::Error;
 use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::auth::domain::user::User;
