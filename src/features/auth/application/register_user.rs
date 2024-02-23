@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 use crate::db::manager::DbManager;
 use crate::errors::client::ClientErrors;
 use crate::errors::Error;
@@ -25,7 +26,7 @@ impl RegisterUser {
         templater: impl Templater,
         template_name: &str,
         request_data: RequestData,
-    ) -> Result<(), Error>
+    ) -> Result<Uuid, Error>
     {
         let email_exists: bool = rep.email_exists(request_data.email()).await?;
 
@@ -70,6 +71,6 @@ impl RegisterUser {
         let mut guard = db_manager.lock().await;
         guard.commit().await?;
 
-        Ok(())
+        Ok(user.id().clone())
     }
 }

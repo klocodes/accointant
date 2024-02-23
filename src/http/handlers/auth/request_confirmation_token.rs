@@ -10,7 +10,7 @@ use crate::services::templater::Templater;
 
 #[derive(Debug, Deserialize)]
 pub struct UserId(String);
-#[post("/auth/request-confirmation-token/{id}")]
+#[post("/request-confirmation-token/{id}")]
 async fn request(user_id: Path<UserId>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, Error> {
     let service_container  = state.into_inner();
 

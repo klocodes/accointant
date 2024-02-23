@@ -1,5 +1,4 @@
 use config::{Config as ConfigLoader, Environment, File, FileFormat};
-use dotenv::dotenv;
 use serde::Deserialize;
 use crate::config::structs::auth::AuthConfig;
 
@@ -31,8 +30,6 @@ impl ConfigManager {
         //Get project root path from PROJECT_ROOT environment variable
         let project_root = std::env::var("PROJECT_ROOT")
             .expect("The PROJECT_ROOT environment variable is not set");
-
-        dotenv().ok();
 
         //Define configuration file names
         //TODO: Add configuration file names to here

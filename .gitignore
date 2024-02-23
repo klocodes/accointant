@@ -2,4 +2,5 @@
 /log
 /target
 .env
+.env.test
 .DS_Store

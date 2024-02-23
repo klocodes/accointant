@@ -23,6 +23,32 @@ impl Command for CreateOperationCommand {
 }
 
 impl CreateOperationCommand {
+    pub fn new(
+        kind: String,
+        user_id: Uuid,
+        category_id: Option<Uuid>,
+        category_name: String,
+        amount: f64,
+        currency: String,
+        currency_amount: f64,
+        rate: f64,
+        label: String,
+        tags: Vec<TagData>,
+    ) -> Self {
+        Self {
+            kind,
+            user_id,
+            category_id,
+            category_name,
+            amount,
+            currency,
+            currency_amount,
+            rate,
+            label,
+            tags,
+        }
+    }
+
     pub fn kind(&self) -> &str {
         &self.kind
     }
@@ -74,50 +100,15 @@ pub struct TagData {
 }
 
 impl TagData {
+    pub fn new (id: Option<Uuid>, name: String) -> Self {
+        Self { id, name }
+    }
+
     pub fn id(&self) -> &Option<Uuid> {
         &self.id
     }
 
     pub fn name(&self) -> &str {
         &self.name
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    impl CreateOperationCommand {
-        pub fn new(
-            kind: String,
-            user_id: Uuid,
-            category_id: Option<Uuid>,
-            category_name: String,
-            amount: f64,
-            currency: String,
-            currency_amount: f64,
-            rate: f64,
-            label: String,
-            tags: Vec<TagData>,
-        ) -> Self {
-            Self {
-                kind,
-                user_id,
-                category_id,
-                category_name,
-                amount,
-                currency,
-                currency_amount,
-                rate,
-                label,
-                tags,
-            }
-        }
-    }
-
-    impl TagData {
-        pub fn new(id: Option<Uuid>, name: String) -> Self {
-            Self { id, name }
-        }
     }
 }

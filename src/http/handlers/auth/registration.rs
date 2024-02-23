@@ -1,7 +1,8 @@
 use std::sync::Arc;
 use actix_web::{post, HttpResponse, Responder};
 use actix_web::web::{Data, Json};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 use crate::di::service_container::ServiceContainer;
@@ -38,6 +39,11 @@ impl RequestData {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ResponseData {
+    pub id: Uuid,
+}
+
 #[post("/register")]
 async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, Error> {
     if let Err(e) = data.validate() {
@@ -59,7 +65,7 @@ async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -
     let mut templater = service_container.templater()?;
     templater.register(mailer_template_name, "mail/confirm_registration.hbs")?;
 
-    let _ = RegisterUser::exec(
+    let user_id = RegisterUser::exec(
         db_manager,
         user_rep,
         hasher,
@@ -70,5 +76,9 @@ async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -
         data.into_inner(),
     ).await?;
 
-    Ok(HttpResponse::Ok())
+    Ok(
+        HttpResponse::Ok().json(ResponseData {
+            id: user_id
+        })
+    )
 }
