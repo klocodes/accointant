@@ -1,12 +1,10 @@
-mod environment;
-
 use actix_web::test;
 use actix_web::web::Data;
 use actix_web::{App};
 use sqlx::PgPool;
 use sqlx::Row;
 use uuid::Uuid;
-use environment::Environment;
+use metan::test_utils::environment::Environment;
 use metan::http::handlers::auth::login::login;
 use metan::services::tokenizer::Tokenizer;
 
@@ -25,7 +23,7 @@ async fn test_login_successful() {
 
     // Prepare data
     let id = Uuid::new_v4();
-    let email = "test@test.com";
+    let email = format!("{}@test.com", id);
     let password = bcrypt::hash("password", 10).expect("Failed to hash password");
 
     let tokenizer = service_container.tokenizer();
@@ -45,12 +43,6 @@ async fn test_login_successful() {
         .execute(&pool)
         .await
         .expect("Failed to insert user");
-
-    let row = sqlx::query("SELECT * FROM users WHERE email = $1")
-        .bind(&email)
-        .fetch_one(&pool)
-        .await
-        .expect("Failed to fetch user");
 
     // Successful confirmation
     let req = test::TestRequest::post()

@@ -1,10 +1,10 @@
 use std::env;
 use std::process::{Command, Stdio};
 use std::sync::{Arc};
-use metan::config::manager::ConfigManager;
-use metan::di::service_container::ServiceContainer;
-use metan::events::event_bus::EventBus;
-use metan::events::event_bus_factory::EventBusFactory;
+use crate::config::manager::ConfigManager;
+use crate::di::service_container::ServiceContainer;
+use crate::events::event_bus::EventBus;
+use crate::events::event_bus_factory::EventBusFactory;
 
 pub struct Environment {
     db_url: String,

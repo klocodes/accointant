@@ -1,5 +1,3 @@
-mod environment;
-
 use actix::dev::Request;
 use serde_json::json;
 use actix_web::{test, App};
@@ -7,8 +5,7 @@ use actix_web::dev::Service;
 use actix_web::web::Data;
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use environment::Environment;
+use metan::test_utils::environment::Environment;
 use metan::services::tokenizer::Tokenizer;
 use metan::http::handlers::auth::registration::register;
 
@@ -29,7 +26,7 @@ async fn test_registration_and_confirmation() {
     let req = test::TestRequest::post()
         .uri("/register")
         .set_json(&json!({
-            "email": "test@example.com",
+            "email": format!("{}@test.com", Uuid::new_v4()),
             "password": "password",
             "password_confirmation": "password"
         }))
@@ -55,7 +52,7 @@ async fn test_registration_email_exists() {
 
     // Prepare data
     let id = Uuid::new_v4();
-    let email = "test@test.com";
+    let email = format!("{}@example.com", id);
     let password = bcrypt::hash("password", 10).expect("Failed to hash password");
 
     let tokenizer = service_container.tokenizer();

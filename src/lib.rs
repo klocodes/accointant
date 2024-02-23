@@ -15,6 +15,7 @@ pub mod events;
 pub mod http;
 pub mod mq;
 pub mod services;
+pub mod test_utils;
 
 // Private modules
 mod errors;

@@ -1,13 +1,12 @@
-mod environment;
-
 use actix_web::test;
 use actix_web::web::Data;
 use actix_web::{App};
 use sqlx::PgPool;
 use uuid::Uuid;
-use environment::Environment;
+use metan::test_utils::environment::Environment;
 use metan::http::handlers::auth::request_confirmation_token::request;
 use metan::services::tokenizer::Tokenizer;
+
 #[actix_rt::test]
 async fn test_request_confirmation_successful() {
     let environment = Environment::new();
@@ -23,7 +22,7 @@ async fn test_request_confirmation_successful() {
 
     // Prepare data
     let id = Uuid::new_v4();
-    let email = "test@test.com";
+    let email = format!("{}@example.com", id);
     let password = bcrypt::hash("password", 10).expect("Failed to hash password");
 
     let tokenizer = service_container.tokenizer();
