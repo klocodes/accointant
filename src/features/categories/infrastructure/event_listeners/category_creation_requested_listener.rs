@@ -30,7 +30,7 @@ impl<R> EventListener for CategoryCreationRequestedListener<R>
         let event = self.parse_event(event)?;
 
 
-        let command = CreateCategoryCommand::new(event.user_id().value(), event.name().clone(), None);
+        let command = CreateCategoryCommand::new(event.payload().user_id().value(), event.name().to_string(), None);
 
         let mut guard = self.command_bus.lock().await;
         let events = guard.dispatch(command).await?;

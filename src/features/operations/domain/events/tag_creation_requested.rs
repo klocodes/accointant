@@ -1,10 +1,17 @@
 use serde::{Deserialize, Serialize};
 use crate::features::shared::id::Id;
 
+pub const NAME: &str = "tag_creation_requested";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TagCreationRequested {
     id: Id,
     name: String,
+    payload: TagCreationRequestedPayload,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TagCreationRequestedPayload {
     operation_id: Id,
     user_id: Id,
     tag_id: Id,
@@ -21,11 +28,13 @@ impl TagCreationRequested {
     ) -> Self {
         Self {
             id,
-            name: "tag_creation_requested".to_string(),
-            operation_id,
-            user_id,
-            tag_id,
-            tag_name,
+            name: NAME.to_string(),
+            payload: TagCreationRequestedPayload {
+                operation_id,
+                user_id,
+                tag_id,
+                tag_name,
+            },
         }
     }
 
@@ -37,6 +46,12 @@ impl TagCreationRequested {
         &self.name
     }
 
+    pub fn payload(&self) -> &TagCreationRequestedPayload {
+        &self.payload
+    }
+}
+
+impl TagCreationRequestedPayload {
     pub fn operation_id(&self) -> &Id {
         &self.operation_id
     }

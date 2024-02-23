@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::features::categories::domain::events::category_created::CategoryCreated;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum CategoryEvent {
     CategoryCreated(CategoryCreated),
 }

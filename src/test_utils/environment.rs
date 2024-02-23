@@ -55,16 +55,6 @@ impl Environment {
     }
 
     fn migrate(&self) {
-        println!("Cleanup migrations database...");
-        let _output = Command::new("just")
-            .arg("test-migrate")
-            .arg(&self.db_url)
-            .arg("down -all")
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-            .expect("Failed to down migration");
-
         println!("Running migrations...");
         let _output = Command::new("just")
             .arg("test-migrate")

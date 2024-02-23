@@ -26,7 +26,7 @@ struct RequestData {
 }
 
 #[derive(serde::Deserialize)]
-struct RequestTagData{
+struct RequestTagData {
     id: Option<Uuid>,
     name: String
 }

@@ -194,9 +194,9 @@ mod operation_creation_tests {
             OperationEvent::OperationCreated(data) => {
                 assert_operation_created_event(data.clone(), command.clone());
 
-                assert_eq!(data.category_id().value(), command.category_id().unwrap()); // Проверка соответствия category_id
-                assert_eq!(data.tag_ids().len(), 2);
-                assert!(data.tag_ids().contains(&Id::new(command.tags()[0].id().unwrap())) && data.tag_ids().contains(&Id::new(command.tags()[1].id().unwrap())));
+                assert_eq!(data.payload().category_id().value(), command.category_id().unwrap()); // Проверка соответствия category_id
+                assert_eq!(data.payload().tag_ids().len(), 2);
+                assert!(data.payload().tag_ids().contains(&Id::new(command.tags()[0].id().unwrap())) && data.payload().tag_ids().contains(&Id::new(command.tags()[1].id().unwrap())));
             }
             _ => {
                 panic!("Unexpected event type");
@@ -233,9 +233,9 @@ mod operation_creation_tests {
             Some(OperationEvent::OperationCreated(data)) => {
                 assert_operation_created_event(data.clone(), command.clone());
 
-                assert_eq!(data.category_id().to_string().len(), 36);
-                assert_eq!(data.tag_ids().len(), 2);
-                assert!(data.tag_ids().contains(&Id::new(command.tags()[0].id().unwrap())) && data.tag_ids().contains(&Id::new(command.tags()[1].id().unwrap())));
+                assert_eq!(data.payload().category_id().to_string().len(), 36);
+                assert_eq!(data.payload().tag_ids().len(), 2);
+                assert!(data.payload().tag_ids().contains(&Id::new(command.tags()[0].id().unwrap())) && data.payload().tag_ids().contains(&Id::new(command.tags()[1].id().unwrap())));
             }
             _ => {
                 panic!("Unexpected event type");
@@ -288,10 +288,10 @@ mod operation_creation_tests {
             OperationEvent::OperationCreated(data) => {
                 assert_operation_created_event(data.clone(), command.clone());
 
-                assert_eq!(data.category_id().value(), command.category_id().unwrap()); // Проверка соответствия category_id
+                assert_eq!(data.payload().category_id().value(), command.category_id().unwrap()); // Проверка соответствия category_id
 
-                assert_eq!(data.tag_ids().len(), 2);
-                assert!(data.tag_ids().contains(&Id::new(tag1_id)) && data.tag_ids().contains(&Id::new(tag2_id)));
+                assert_eq!(data.payload().tag_ids().len(), 2);
+                assert!(data.payload().tag_ids().contains(&Id::new(tag1_id)) && data.payload().tag_ids().contains(&Id::new(tag2_id)));
             }
             _ => {
                 panic!("Unexpected event type");
@@ -317,8 +317,8 @@ mod operation_creation_tests {
             OperationEvent::OperationCreated(data) => {
                 assert_operation_created_event(data.clone(), command.clone());
 
-                assert_eq!(data.category_id().to_string().len(), 36); // Проверка формата UUID
-                assert_eq!(data.tag_ids().len(), 0);
+                assert_eq!(data.payload().category_id().to_string().len(), 36); // Проверка формата UUID
+                assert_eq!(data.payload().tag_ids().len(), 0);
             }
             _ => {
                 panic!("Unexpected event type");
@@ -399,30 +399,30 @@ mod operation_creation_tests {
 
     fn assert_operation_created_event(data: OperationCreated, command: CreateOperationCommand) {
         assert_eq!(data.id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.operation_id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.user_id().value(), *command.user_id()); // Проверка соответствия user_id
-        assert_eq!(data.kind().to_str(), command.kind()); // Проверка соответствия kind
-        assert_eq!(data.amount().value(), command.amount()); // Проверка значений
-        assert_eq!(data.currency_amount().value(), command.currency_amount()); // Проверка значений
-        assert_eq!(data.currency().to_str(), command.currency()); // Проверка соответствия currency
-        assert_eq!(data.rate().value(), command.rate()); // Проверка значений
-        assert_eq!(data.label(), command.label());
+        assert_eq!(data.payload().id().to_string().len(), 36); // Проверка формата UUID
+        assert_eq!(data.payload().user_id().value(), *command.user_id()); // Проверка соответствия user_id
+        assert_eq!(data.payload().kind().to_str(), command.kind()); // Проверка соответствия kind
+        assert_eq!(data.payload().amount().value(), command.amount()); // Проверка значений
+        assert_eq!(data.payload().amount_currency().value(), command.currency_amount()); // Проверка значений
+        assert_eq!(data.payload().currency().to_str(), command.currency()); // Проверка соответствия currency
+        assert_eq!(data.payload().rate().value(), command.rate()); // Проверка значений
+        assert_eq!(data.payload().label(), command.label());
     }
 
     fn assert_category_creation_requested_event(data: CategoryCreationRequested, command: CreateOperationCommand) {
-        assert_eq!(data.id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.user_id().value(), *command.user_id()); // Проверка соответствия user_id
-        assert_eq!(data.category_id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.category_name(), command.category_name());
+        assert_eq!(data.payload().operation_id().to_string().len(), 36); // Проверка формата UUID
+        assert_eq!(data.payload().user_id().value(), *command.user_id()); // Проверка соответствия user_id
+        assert_eq!(data.payload().category_id().to_string().len(), 36); // Проверка формата UUID
+        assert_eq!(data.payload().category_name(), command.category_name());
     }
 
     fn assert_tag_creation_requested_event(data: TagCreationRequested, command: CreateOperationCommand, command_tag_index: usize) -> Uuid {
-        assert_eq!(data.id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.user_id().value(), *command.user_id()); // Проверка соответствия user_id
-        assert_eq!(data.tag_id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.tag_name(), command.tags()[command_tag_index].name());
+        assert_eq!(data.payload().operation_id().to_string().len(), 36); // Проверка формата UUID
+        assert_eq!(data.payload().user_id().value(), *command.user_id()); // Проверка соответствия user_id
+        assert_eq!(data.payload().tag_id().to_string().len(), 36); // Проверка формата UUID
+        assert_eq!(data.payload().tag_name(), command.tags()[command_tag_index].name());
 
-        data.tag_id().value().clone()
+        data.payload().tag_id().value().clone()
     }
 }
 
