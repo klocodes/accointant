@@ -1,6 +1,7 @@
 use uuid::Uuid;
 use crate::support::command_bus::Command;
 
+#[derive(Debug)]
 pub struct CreateCategoryCommand {
     user_id: Uuid,
     name: String,

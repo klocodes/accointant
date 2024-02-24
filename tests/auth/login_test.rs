@@ -11,7 +11,7 @@ use metan::services::tokenizer::Tokenizer;
 #[actix_rt::test]
 async fn test_login_successful() {
     let environment = Environment::new();
-    let (service_container, event_bus) = environment.setup().await;
+    let (service_container, event_bus, _) = environment.setup().await;
 
     let app = test::init_service(
         App::new()

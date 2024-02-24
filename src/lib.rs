@@ -19,7 +19,7 @@ pub mod test_utils;
 
 // Private modules
 mod errors;
-mod features;
+pub mod features;
 mod log;
 mod support;
 
@@ -36,13 +36,17 @@ impl App {
 
         let _guard = logger::init(service_container.config().log().clone());
 
-        let (event_bus, receiver) = EventBusFactory::create(service_container.clone()).await.expect("Failed to create event bus");
+        let (event_bus, queue_receiver, mut response) = EventBusFactory::create(service_container.clone()).await.expect("Failed to create event bus");
 
         let event_bus_clone = event_bus.clone();
         tokio::spawn(async move {
-            if let Err(e) = event_bus_clone.start(receiver).await {
+            if let Err(e) = event_bus_clone.start(queue_receiver).await {
                 log_error!("{}", e.to_string());
                 log_trace!("{}", e.to_string());
+            }
+
+            while let responder = response.recv().await.expect("Failed to receive response") {
+                let _ = responder.handle().await;
             }
         });
 

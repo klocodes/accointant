@@ -1,7 +1,7 @@
 use thiserror::Error;
 use serde_json::Value;
 
-#[derive(Debug, Error)]
+#[derive(Clone, Debug, Error)]
 pub enum ServerErrors {
     #[error("Internal Server Error: A general error when an unexpected condition was encountered on the server. {context:?}")]
     InternalServerError { context: Option<Value> },

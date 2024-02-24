@@ -7,33 +7,38 @@ use crate::errors::server::ServerErrors::InternalServerError;
 use crate::events::event::Event;
 use crate::events::event_bus::EventBus;
 use crate::events::event_listener::EventListener;
+use crate::events::event_responder::EventResponder;
 use crate::mq::connection::MqConnection;
 use crate::mq::manager::MqManager;
 use crate::mq::message::Message;
 use crate::services::serializer::Serializer;
 
 const QUEUE_BUFFER: usize = 100;
+const RESPONSE_BUFFER: usize = 100;
 
 pub struct MqEventBus {
     broker: Arc<MqManager>,
     serializer: Serializer,
     listeners: Arc<Mutex<Vec<Box<dyn EventListener>>>>,
     queue: Arc<Mutex<Sender<Event>>>,
+    responder: Arc<Mutex<Sender<EventResponder>>>,
 }
 
 impl MqEventBus {
-    pub async fn new(broker: Arc<MqManager>, serializer: Serializer, listeners: Arc<Mutex<Vec<Box<dyn EventListener>>>>) -> Result<(Self, Receiver<Event>), Error> {
-        let (sender, receiver) = tokio::sync::mpsc::channel(QUEUE_BUFFER);
+    pub async fn new(broker: Arc<MqManager>, serializer: Serializer, listeners: Arc<Mutex<Vec<Box<dyn EventListener>>>>) -> Result<(Self, Receiver<Event>, Receiver<EventResponder>), Error> {
+        let (queue_sender, queue_receiver) = tokio::sync::mpsc::channel(QUEUE_BUFFER);
+        let (responder, response) = tokio::sync::mpsc::channel(RESPONSE_BUFFER);
 
         let event_bus = Self {
             broker,
             serializer,
             listeners,
-            queue: Arc::new(Mutex::new(sender)),
+            queue: Arc::new(Mutex::new(queue_sender)),
+            responder: Arc::new(Mutex::new(responder)),
         };
 
         Ok(
-            (event_bus, receiver)
+            (event_bus, queue_receiver, response)
         )
     }
 }
@@ -67,20 +72,30 @@ impl EventBus for MqEventBus {
 
             for listener in listeners.iter_mut() {
                 if event.name() == listener.event_name() {
-                    let events = listener.on_event(event.clone()).await?;
+                    let result = listener.on_event(event.clone()).await;
+                    let guard = self.responder.lock().await;
+                    guard.send(EventResponder::new(event.clone(), result.clone())).await.map_err(|e|
+                        Error::Server(
+                            InternalServerError {
+                                context: Some(e.to_string().into())
+                            }
+                        )
+                    )?;
 
-                    for event in events {
-                        let guard = self.queue.lock().await;
+                    if let Ok(events) = result {
+                        for event in events {
+                            let guard = self.queue.lock().await;
 
-                        guard.send(event)
-                            .await
-                            .map_err(|e|
-                                Error::Server(
-                                    InternalServerError {
-                                        context: Some(e.to_string().into())
-                                    }
-                                )
-                            )?;
+                            guard.send(event)
+                                .await
+                                .map_err(|e|
+                                    Error::Server(
+                                        InternalServerError {
+                                            context: Some(e.to_string().into())
+                                        }
+                                    )
+                                )?;
+                        }
                     }
                 }
             }

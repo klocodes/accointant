@@ -12,7 +12,7 @@ use metan::http::handlers::auth::registration::register;
 #[actix_rt::test]
 async fn test_registration_and_confirmation() {
     let environment = Environment::new();
-    let (service_container, event_bus) = environment.setup().await;
+    let (service_container, event_bus, _) = environment.setup().await;
 
     let app = test::init_service(
         App::new()
@@ -40,7 +40,7 @@ async fn test_registration_and_confirmation() {
 #[actix_rt::test]
 async fn test_registration_email_exists() {
     let environment = Environment::new();
-    let (service_container, event_bus) = environment.setup().await;
+    let (service_container, event_bus, _) = environment.setup().await;
 
     let app = test::init_service(
         App::new()

@@ -29,8 +29,7 @@ impl<R> EventListener for CategoryCreationRequestedListener<R>
     async fn on_event(&mut self, event: Event) -> Result<Vec<Event>, Error> {
         let event = self.parse_event(event)?;
 
-
-        let command = CreateCategoryCommand::new(event.payload().user_id().value(), event.name().to_string(), None);
+        let command = CreateCategoryCommand::new(event.payload().user_id().value(), event.payload().category_name().to_string(), None);
 
         let mut guard = self.command_bus.lock().await;
         let events = guard.dispatch(command).await?;

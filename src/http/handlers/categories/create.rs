@@ -14,10 +14,10 @@ use crate::services::jwt::JwtService;
 #[derive(Deserialize)]
 struct RequestData {
     name: String,
-    icon: String,
+    icon: Option<String>
 }
 
-#[post("/category")]
+#[post("/create")]
 pub async fn create_category(
     request_data: Json<RequestData>,
     jwt: Jwt,
@@ -34,7 +34,7 @@ pub async fn create_category(
     let db_manager = service_container.db_manager();
     let rep = DbCategoryRepository::new(db_manager.clone(), service_container.serializer());
 
-    let command = CreateCategoryCommand::new(user_id, request_data.name.clone(), Some(request_data.icon.clone()));
+    let command = CreateCategoryCommand::new(user_id, request_data.name.clone(), request_data.icon.clone());
     let handler = CreateCategoryCommandHandler::new(rep);
 
     let mut command_bus = service_container.command_bus();
