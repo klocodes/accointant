@@ -1,7 +1,7 @@
 use thiserror::Error;
 use serde_json::Value;
 
-#[derive(Debug, Error)]
+#[derive(Clone, Debug, Error)]
 pub enum NetworkErrors {
     #[error("Method Not Allowed: The request method is known by the server but is not supported by the target resource. {context:?}")]
     MethodNotAllowed { context: Option<Value> },

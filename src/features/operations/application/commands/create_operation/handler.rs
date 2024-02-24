@@ -52,6 +52,8 @@ impl<R> CommandHandler<CreateOperationCommand> for CreateOperationCommandHandler
            events.push(Event::OperationEvent(event));
         }
 
+        println!("{:?}", events);
+
         Ok(events)
     }
 }

@@ -5,11 +5,18 @@ use crate::features::operations::domain::currency::Currency;
 use crate::features::operations::domain::kind::Kind;
 use crate::features::shared::id::Id;
 
+pub const OPERATION_CREATED_NAME: &str = "operation_created";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OperationCreated {
     id: Id,
     name: String,
-    operation_id: Id,
+    payload: OperationCreatedPayload,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationCreatedPayload {
+    id: Id,
     user_id: Id,
     kind: Kind,
     category_id: Id,
@@ -39,18 +46,21 @@ impl OperationCreated {
     ) -> Self {
         Self {
             id,
-            name: "operation_created".to_string(),
-            operation_id,
-            user_id,
-            kind,
-            category_id,
-            amount,
-            amount_currency,
-            currency,
-            rate,
-            label,
-            tag_ids,
-            created_at,
+            name: OPERATION_CREATED_NAME.to_string(),
+            payload: OperationCreatedPayload {
+                id: operation_id,
+                user_id,
+                kind,
+                category_id,
+                amount,
+                amount_currency,
+                currency,
+                rate,
+                label,
+                tag_ids,
+                created_at,
+            },
+
         }
     }
 
@@ -58,8 +68,18 @@ impl OperationCreated {
         &self.id
     }
 
-    pub fn operation_id(&self) -> &Id {
-        &self.operation_id
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn payload(&self) -> &OperationCreatedPayload {
+        &self.payload
+    }
+}
+
+impl OperationCreatedPayload {
+    pub fn id(&self) -> &Id {
+        &self.id
     }
 
     pub fn user_id(&self) -> &Id {
@@ -78,7 +98,7 @@ impl OperationCreated {
         &self.amount
     }
 
-    pub fn currency_amount(&self) -> &Amount {
+    pub fn amount_currency(&self) -> &Amount {
         &self.amount_currency
     }
 
@@ -90,7 +110,7 @@ impl OperationCreated {
         &self.rate
     }
 
-    pub fn label(&self) -> &String {
+    pub fn label(&self) -> &str {
         &self.label
     }
 

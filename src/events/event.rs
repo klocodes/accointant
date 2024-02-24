@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use crate::features::categories::domain::events::category_event::CategoryEvent;
 use crate::features::operations::domain::events::operation_event::OperationEvent;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Event {
     OperationEvent(OperationEvent),
     CategoryEvent(CategoryEvent),

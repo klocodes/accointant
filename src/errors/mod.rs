@@ -4,7 +4,7 @@ pub mod client;
 pub mod network;
 pub mod server;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, Error)]
 pub enum Error {
     #[error("Client Error: {0}")]
     Client(client::ClientErrors),

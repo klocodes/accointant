@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS category_event
+CREATE TABLE IF NOT EXISTS category_events
 (
     id                            uuid PRIMARY KEY,
     name                          VARCHAR(255) DEFAULT NULL,

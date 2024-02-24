@@ -59,7 +59,7 @@ impl CategoryRepository for DbCategoryRepository {
                 )
             )?;
 
-        let exists: (bool, ) = row.try_get(0)
+        let exists = row.try_get::<bool, _>(0)
             .map_err(|e|
                 Error::Server(
                     InternalServerError {
@@ -68,13 +68,13 @@ impl CategoryRepository for DbCategoryRepository {
                 )
             )?;
 
-        Ok(exists.0)
+        Ok(exists)
     }
 
     async fn persist_category_created_event(&self, category_created: &CategoryCreated) -> Result<(), Error> {
         let q = "INSERT INTO category_events (id, name, payload) VALUES ($1, $2, $3)";
 
-        let payload = serde_json::to_string(
+        let payload = serde_json::to_value(
             &category_created.payload()
         ).map_err(|e|
             Error::Server(

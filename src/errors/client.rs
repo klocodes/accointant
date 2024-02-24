@@ -1,7 +1,7 @@
 use serde_json::Value;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Clone, Error, Debug)]
 pub enum ClientErrors {
     #[error("{message:?}")]
     BadRequest { message: Option<Value> },

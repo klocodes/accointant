@@ -3,14 +3,14 @@ use crate::features::shared::id::Id;
 
 pub const CATEGORY_CREATED_NAME: &str = "category_created";
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CategoryCreated {
     id: Id,
     name: String,
     payload: CategoryCreatedPayload,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CategoryCreatedPayload {
     id: Id,
     user_id: Id,
