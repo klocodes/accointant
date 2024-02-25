@@ -5,6 +5,8 @@ use crate::errors::Error;
 use crate::events::event_listener::EventListener;
 use crate::features::categories::infrastructure::db_category_repository::DbCategoryRepository;
 use crate::features::categories::infrastructure::event_listeners::category_creation_requested_listener::CategoryCreationRequestedListener;
+use crate::features::tags::infrastructure::db_tag_repository::DbTagRepository;
+use crate::features::tags::infrastructure::event_listeners::tag_creation_requested_listener::TagCreationRequestedListener;
 
 pub struct EventListenerRegistry {
     service_container: Arc<ServiceContainer>,
@@ -37,8 +39,21 @@ impl EventListenerRegistry {
             ),
         ).await;
 
+        let tag_creation_requested_listener = TagCreationRequestedListener::new(
+            Arc::new(Mutex::new(
+                self.service_container.command_bus()
+            )),
+            DbTagRepository::new(
+                self.service_container.db_manager().clone(),
+                self.service_container.serializer(),
+            ),
+        ).await;
+
         guard.push(
             Box::new(category_creation_requested_listener),
+        );
+        guard.push(
+            Box::new(tag_creation_requested_listener),
         );
 
         Ok(())
