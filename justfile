@@ -2,7 +2,7 @@ run:
     PROJECT_ROOT=$(pwd) RUST_BACKTRACE="full" RUST_LOG=actix_web=debug cargo run
 
 test:
-    PROJECT_ROOT=$(pwd) RUST_LOG=actix_web=debug cargo test
+    PROJECT_ROOT=$(pwd) RUST_LOG=actix_web=debug cargo test --lib
 
 release:
     PROJECT_ROOT=$(pwd) RUST_BACKTRACE="full" RUST_LOG=actix_web=debug cargo run --release
