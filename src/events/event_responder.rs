@@ -3,6 +3,7 @@ use crate::events::event::Event;
 use crate::{log_error, log_trace};
 use crate::errors::server::ServerErrors::InternalServerError;
 
+#[derive(Debug, Clone)]
 pub struct EventResponder {
     event: Event,
     result: Result<Vec<Event>, Error>,
