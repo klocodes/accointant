@@ -3,11 +3,16 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use crate::db::manager::DbManager;
-use crate::errors::client::ClientErrors;
-use crate::errors::Error;
 use crate::features::auth::application::dto::user_data::UserData;
+use crate::features::auth::domain::error::DomainError;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
+use crate::features::auth::error::AuthError;
+use crate::features::auth::infrastructure::adapters::hasher_adapter::HasherAdapter;
+use crate::features::auth::infrastructure::adapters::mailer_adapter::MailerAdapter;
+use crate::features::auth::infrastructure::adapters::templater_adapter::TemplaterAdapter;
+use crate::features::auth::infrastructure::adapters::tokenizer_adapter::TokenizerAdapter;
+use crate::features::auth::infrastructure::error::InfrastructureError;
 use crate::http::handlers::auth::registration::RequestData;
 use crate::services::hasher::Hasher;
 use crate::services::mailer::Mailer;
@@ -20,34 +25,35 @@ impl RegisterUser {
     pub async fn exec(
         db_manager: Arc<Mutex<DbManager>>,
         rep: impl UserRepository,
-        hasher: impl Hasher,
-        tokenizer: impl Tokenizer,
-        mailer: impl Mailer,
-        templater: impl Templater,
+        hasher: HasherAdapter<impl Hasher>,
+        tokenizer: TokenizerAdapter<impl Tokenizer>,
+        mailer: MailerAdapter<impl Mailer>,
+        templater: TemplaterAdapter<impl Templater>,
         template_name: &str,
         request_data: RequestData,
-    ) -> Result<Uuid, Error>
+    ) -> Result<Uuid, AuthError>
     {
         let email_exists: bool = rep.email_exists(request_data.email()).await?;
 
         if email_exists {
-            return Err(Error::Client(ClientErrors::BadRequest {
-                message: Some(
-                    format!(
-                        "User with email {} already exists", request_data.email()
-                    ).into()
-                )
-            }));
+            return Err(AuthError::Domain(DomainError::UserAlreadyExists));
         }
+
+        let hashed_password = hasher.hash(request_data.password().to_string())?;
+        let confirmation_token = tokenizer.generate()?;
+
 
         let user_data = UserData::new(
             request_data.email().to_string(),
             request_data.password().to_string(),
             request_data.password_confirmation().to_string(),
-            hasher.hash(request_data.password().to_string())?,
-            tokenizer.generate()?,
+            hashed_password,
+            confirmation_token,
         );
-        let user = User::register(user_data.clone())?;
+        let user = User::register(user_data.clone())
+            .map_err(
+                |e| AuthError::Domain(e)
+            )?;
 
         let _ = rep.create(&user).await?;
 
@@ -63,13 +69,24 @@ impl RegisterUser {
 
         if let Err(e) = res {
             let mut guard = db_manager.lock().await;
-            guard.rollback().await?;
+            guard.rollback().await
+                .map_err(|e|
+                    AuthError::Infrastructure(
+                        InfrastructureError::Transaction(e.to_string())
+                    )
+                )?;
 
             return Err(e);
         }
 
         let mut guard = db_manager.lock().await;
-        guard.commit().await?;
+        guard.commit()
+            .await
+            .map_err(|e|
+                AuthError::Infrastructure(
+                    InfrastructureError::Transaction(e.to_string())
+                )
+            )?;
 
         Ok(user.id().clone())
     }

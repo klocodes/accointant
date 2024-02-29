@@ -13,7 +13,6 @@ use crate::errors::server::ServerErrors::InternalServerError;
 #[automock]
 #[async_trait]
 pub trait Mailer {
-    fn new(cfg: &MailerConfig) -> Result<Self, Error> where Self: Sized;
     async fn send(&self, email: String, subject: String, body: String) -> Result<(), Error>;
 }
 
@@ -26,20 +25,20 @@ pub struct LettreMailer {
     from: String,
 }
 
-#[async_trait]
-impl Mailer for LettreMailer {
-    fn new(cfg: &MailerConfig) -> Result<Self, Error> {
-        let mailer = Self {
+impl LettreMailer {
+    pub fn new(cfg: &MailerConfig) -> Self {
+        Self {
             host: cfg.host().to_string(),
             port: cfg.port(),
             username: cfg.username().to_string(),
             password: cfg.password().to_string(),
             from: cfg.from().to_string(),
-        };
-
-        Ok(mailer)
+        }
     }
+}
 
+#[async_trait]
+impl Mailer for LettreMailer {
     async fn send(&self, email: String, subject: String, body: String) -> Result<(), Error> {
         let from: Mailbox = self.from.parse().map_err(|e: AddressError| {
             Error::Server(

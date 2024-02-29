@@ -63,7 +63,7 @@ impl ServiceContainer {
         JsonwebtokenLibService::new(self.config.auth().clone())
     }
 
-    pub fn mailer(&self) -> Result<impl Mailer, Error> {
+    pub fn mailer(&self) -> impl Mailer {
         LettreMailer::new(self.config.mailer())
     }
 
@@ -75,10 +75,8 @@ impl ServiceContainer {
         Serializer::Cbor
     }
 
-    pub fn templater(&self) -> Result<impl Templater, Error> {
-        let templater = HandlebarsTemplater::new(self.config.templater().clone());
-
-        Ok(templater)
+    pub fn templater(&self) -> impl Templater {
+        HandlebarsTemplater::new(self.config.templater().clone())
     }
 
     pub fn tokenizer(&self) -> impl Tokenizer {

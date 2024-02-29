@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-use crate::errors::client::ClientErrors::{DomainError};
-use crate::errors::Error;
+use crate::features::auth::domain::error::DomainError;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct Email {
@@ -11,18 +10,14 @@ pub struct Email {
 }
 
 impl Email {
-    pub fn new(email: String) -> Result<Self, Error> {
+    pub fn new(email: String) -> Result<Self, DomainError> {
         let email = Self {
             value: email
         };
 
         if let Err(e) = email.validate() {
             return Err(
-                Error::Client(
-                    DomainError {
-                        message: e.to_string().into()
-                    }
-                )
+                DomainError::InvalidEmail(e.to_string())
             );
         }
 

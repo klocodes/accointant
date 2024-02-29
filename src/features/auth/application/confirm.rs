@@ -1,32 +1,42 @@
-use crate::errors::client::ClientErrors::BadRequest;
-use crate::errors::Error;
+use uuid::Uuid;
+use crate::features::auth::domain::error::DomainError;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
-use crate::http::handlers::auth::confirm_registration::RequestData;
+use crate::features::auth::error::AuthError;
+use crate::features::auth::infrastructure::adapters::tokenizer_adapter::TokenizerAdapter;
 use crate::services::tokenizer::Tokenizer;
 
-pub struct ConfirmRegistration;
+pub struct ConfirmRegistration {
+    user_id: Uuid,
+    token: String,
+}
 
 impl ConfirmRegistration {
-    pub async fn exec(rep: impl UserRepository, tokenizer: impl Tokenizer, data: RequestData) -> Result<(), Error> {
-        let id = data.id()?;
+    pub fn new(user_id: Uuid, token: String) -> Self {
+        Self {
+            user_id,
+            token,
+        }
+    }
 
-        let mut user: User = rep.find_by_id(id)
+    pub async fn exec(
+        &self,
+        rep: impl UserRepository,
+        tokenizer_adapter: TokenizerAdapter<impl Tokenizer>
+    ) -> Result<(), AuthError> {
+        let mut user: User = rep.find_by_id(self.user_id)
             .await?
             .ok_or(
-                Error::Client(BadRequest {
-                    message: Some( "User not found by this id".into())
-                })
+                AuthError::Domain(
+                    DomainError::UserNotFound
+                )
             )?;
-        let token = data.token();
 
-        let is_valid = tokenizer.validate(token);
+        tokenizer_adapter.validate(self.token.as_str())?;
 
-        if is_valid.is_err() {
-            return Err(is_valid.unwrap_err());
-        }
 
-        user.confirm(token.to_string())?;
+        user.confirm(self.token.clone())
+            .map_err(|e| AuthError::Domain(e))?;
 
         rep.confirm_email(user).await?;
 

@@ -6,6 +6,8 @@ use crate::errors::client::ClientErrors;
 use crate::errors::network::NetworkErrors;
 use crate::errors::server::ServerErrors;
 use crate::{log_error, log_trace};
+use crate::errors::error::AppError;
+use crate::features::auth::error::AuthError;
 
 /*pub struct ErrorHandler;
 
@@ -78,6 +80,32 @@ impl ResponseError for Error {
                     ServerErrors::UnavailableForLegalReasons { .. } => StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
                 }
             }
+        }
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        let status_code = self.status_code();
+        let error_message = self.to_string();
+
+        log_error!("Error response: {}", error_message);
+        log_trace!("Trace response: {}", error_message);
+
+        HttpResponse::build(status_code)
+            .json(serde_json::json!({
+                "error": error_message
+            }))
+    }
+}
+
+impl ResponseError for AppError {
+    fn status_code(&self, ) -> StatusCode {
+        match self {
+            AppError::Auth(auth_errors) => match auth_errors {
+                AuthError::Domain(_) => StatusCode::UNPROCESSABLE_ENTITY,
+                AuthError::Infrastructure(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            },
+            AppError::RequestValidation(_) => StatusCode::BAD_REQUEST,
+            AppError::Service(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 

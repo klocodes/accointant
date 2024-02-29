@@ -3,11 +3,14 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use crate::db::manager::DbManager;
-
-use crate::errors::client::ClientErrors::{BadRequest};
-use crate::errors::Error;
+use crate::features::auth::domain::error::DomainError;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
+use crate::features::auth::error::AuthError;
+use crate::features::auth::infrastructure::adapters::mailer_adapter::MailerAdapter;
+use crate::features::auth::infrastructure::adapters::templater_adapter::TemplaterAdapter;
+use crate::features::auth::infrastructure::adapters::tokenizer_adapter::TokenizerAdapter;
+use crate::features::auth::infrastructure::error::InfrastructureError;
 use crate::services::mailer::Mailer;
 use crate::services::templater::Templater;
 use crate::services::tokenizer::Tokenizer;
@@ -15,33 +18,29 @@ use crate::services::tokenizer::Tokenizer;
 pub struct RequestConfirmationToken;
 
 impl RequestConfirmationToken {
-    pub async fn exec<M>(
+    pub async fn exec(
         db_manager: Arc<Mutex<DbManager>>,
         rep: impl UserRepository,
-        tokenizer: impl Tokenizer,
-        mailer: M,
-        templater: impl Templater,
+        tokenizer: TokenizerAdapter<impl Tokenizer>,
+        mailer: MailerAdapter<impl Mailer>,
+        templater: TemplaterAdapter<impl Templater>,
         template_name: &str,
-        user_id: &str,
-    ) -> Result<(), Error>
-        where
-            M: Mailer
+        user_id: Uuid,
+    ) -> Result<(), AuthError>
     {
-        let user_id = Uuid::parse_str(user_id)
-            .map_err(|e| Error::Client(BadRequest {
-                message: Some(format!("Failed to parse user id: {}", e.to_string()).into())
-            }))?;
-
         let mut user: User = rep.find_by_id(user_id)
             .await?
             .ok_or(
-                Error::Client(BadRequest {
-                    message: Some( "User not found by this email".into())
-                })
+                AuthError::Domain(
+                    DomainError::UserNotFound
+                )
             )?;
 
         let token = tokenizer.generate()?;
-        user.request_confirmation(token.clone())?;
+        user.request_confirmation(token.clone())
+            .map_err(|e|
+                AuthError::Domain(e)
+            )?;
 
         rep.update_confirmation_token(user.clone()).await?;
 
@@ -60,14 +59,26 @@ impl RequestConfirmationToken {
         if let Err(e) = res {
             let mut guard = db_manager.lock().await;
 
-            guard.rollback().await?;
+            guard.rollback()
+                .await
+                .map_err(
+                    |e| AuthError::Infrastructure(
+                        InfrastructureError::Transaction(e.to_string())
+                    )
+                )?;
 
             return Err(e);
         }
 
         let mut guard = db_manager.lock().await;
 
-        guard.commit().await?;
+        guard.commit()
+            .await
+            .map_err(
+                |e| AuthError::Infrastructure(
+                    InfrastructureError::Transaction(e.to_string())
+                )
+            )?;
 
         Ok(())
     }
