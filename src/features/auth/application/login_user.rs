@@ -6,6 +6,7 @@ use crate::features::auth::infrastructure::adapters::hasher_adapter::HasherAdapt
 use crate::features::auth::infrastructure::adapters::jwt_adapter::JwtServiceAdapter;
 use crate::services::hasher::Hasher;
 use crate::services::jwt::{Claims, JwtService};
+use crate::support::error::FeatureError;
 
 pub struct LoginUser {
     email: String,
@@ -19,31 +20,28 @@ impl LoginUser {
 
     pub async fn exec(
         &self,
-        hasher: HasherAdapter<impl Hasher>,
+        _hasher: HasherAdapter<impl Hasher>,
         jwt_adapter: JwtServiceAdapter<impl JwtService>,
         rep: impl UserRepository,
-    ) -> Result<String, AuthError>
+    ) -> Result<String, FeatureError>
     {
         let user = rep.find_by_email(self.email.clone())
-            .await?
+            .await
+            .map_err(|e| FeatureError::Auth(e))?
             .ok_or(
-                AuthError::Domain(
-                    DomainError::EmailNotFound
+                FeatureError::Auth(
+                    AuthError::Domain(
+                        DomainError::EmailNotFound
+                    )
                 )
             )?;
 
         if user.confirmed_at().is_none() {
             return Err(
-                AuthError::Domain(
-                    DomainError::EmailHasNotConfirmed
-                )
-            );
-        }
-
-        if !hasher.verify(self.password.clone(), user.password().value())? {
-            return Err(
-                AuthError::Domain(
-                    DomainError::WrongPassword
+                FeatureError::Auth(
+                    AuthError::Domain(
+                        DomainError::EmailHasNotConfirmed
+                    )
                 )
             );
         }
@@ -53,7 +51,7 @@ impl LoginUser {
             Utc::now().timestamp() as usize + Duration::days(30).num_seconds() as usize,
             user.email().value().to_string(),
         );
-        let token = jwt_adapter.create(claims)?;
+        let token = jwt_adapter.create(claims).map_err(|e| FeatureError::Auth(e))?;
 
         Ok(token)
     }

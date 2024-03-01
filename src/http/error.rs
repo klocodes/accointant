@@ -6,25 +6,10 @@ use crate::errors::client::ClientErrors;
 use crate::errors::network::NetworkErrors;
 use crate::errors::server::ServerErrors;
 use crate::{log_error, log_trace};
-use crate::errors::error::AppError;
+use crate::events::error::EventError;
 use crate::features::auth::error::AuthError;
-
-/*pub struct ErrorHandler;
-
-impl ErrorHandler {
-    pub fn from_status(actix_error: &ActixError) -> Error {
-        let status_code= actix_error.as_response_error().status_code();
-        let error = match status_code {
-            StatusCode::NOT_FOUND => Error::Client(ClientErrors::NotFound { context: None }),
-            StatusCode::FORBIDDEN => Error::Server(ServerErrors::Forbidden { context: None }),
-            StatusCode::METHOD_NOT_ALLOWED => Error::Network(NetworkErrors::MethodNotAllowed { context: None }),
-            StatusCode::INTERNAL_SERVER_ERROR => Error::Server(ServerErrors::InternalServerError { context: None }),
-            _ => Error::Server(ServerErrors::InternalServerError { context: None })
-        };
-
-        error
-    }
-}*/
+use crate::features::operations::error::OperationError;
+use crate::support::error::FeatureError;
 
 impl ResponseError for Error {
     fn status_code(&self) -> StatusCode {
@@ -97,15 +82,38 @@ impl ResponseError for Error {
     }
 }
 
-impl ResponseError for AppError {
+
+#[derive(Clone, Debug, thiserror::Error)]
+pub enum HttpError {
+    #[error("Feature error. {0}")]
+    Feature(FeatureError),
+
+    #[error("Request validation error. {0}")]
+    RequestValidation(String),
+
+    #[error("Event error. {0}")]
+    Event(EventError),
+
+    #[error("Service error. {0}")]
+    Service(String),
+}
+impl ResponseError for HttpError {
     fn status_code(&self, ) -> StatusCode {
         match self {
-            AppError::Auth(auth_errors) => match auth_errors {
-                AuthError::Domain(_) => StatusCode::UNPROCESSABLE_ENTITY,
-                AuthError::Infrastructure(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            HttpError::Feature(feature_errors) => match feature_errors {
+                FeatureError::Auth(auth_error) => match auth_error {
+                    AuthError::Domain(_) => StatusCode::UNPROCESSABLE_ENTITY,
+                    AuthError::Infrastructure(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                },
+
+                FeatureError::Operation(operation_error) => match operation_error {
+                    OperationError::Domain(_) => StatusCode::UNPROCESSABLE_ENTITY,
+                    OperationError::Infrastructure(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                },
             },
-            AppError::RequestValidation(_) => StatusCode::BAD_REQUEST,
-            AppError::Service(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            HttpError::RequestValidation(_) => StatusCode::BAD_REQUEST,
+            HttpError::Service(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 

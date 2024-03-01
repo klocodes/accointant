@@ -18,6 +18,7 @@ use crate::services::hasher::Hasher;
 use crate::services::mailer::Mailer;
 use crate::services::templater::Templater;
 use crate::services::tokenizer::Tokenizer;
+use crate::support::error::FeatureError;
 
 pub struct RegisterUser;
 
@@ -31,16 +32,22 @@ impl RegisterUser {
         templater: TemplaterAdapter<impl Templater>,
         template_name: &str,
         request_data: RequestData,
-    ) -> Result<Uuid, AuthError>
+    ) -> Result<Uuid, FeatureError>
     {
-        let email_exists: bool = rep.email_exists(request_data.email()).await?;
+        let email_exists: bool = rep.email_exists(request_data.email()).await.map_err(|e| FeatureError::Auth(e))?;
 
         if email_exists {
-            return Err(AuthError::Domain(DomainError::UserAlreadyExists));
+            return Err(
+                FeatureError::Auth(
+                    AuthError::Domain(DomainError::UserAlreadyExists)
+                )
+            );
         }
 
-        let hashed_password = hasher.hash(request_data.password().to_string())?;
-        let confirmation_token = tokenizer.generate()?;
+        let hashed_password = hasher.hash(request_data.password().to_string())
+            .map_err(|e| FeatureError::Auth(e))?;
+        let confirmation_token = tokenizer.generate()
+            .map_err(|e| FeatureError::Auth(e))?;
 
 
         let user_data = UserData::new(
@@ -51,11 +58,15 @@ impl RegisterUser {
             confirmation_token,
         );
         let user = User::register(user_data.clone())
-            .map_err(
-                |e| AuthError::Domain(e)
+            .map_err(|e|
+                FeatureError::Auth(
+                    AuthError::Domain(e)
+                )
             )?;
 
-        let _ = rep.create(&user).await?;
+        let _ = rep.create(&user)
+            .await
+            .map_err(|e| FeatureError::Auth(e))?;
 
         let mut body_data = HashMap::new();
         let url = format!(
@@ -63,7 +74,8 @@ impl RegisterUser {
         );
         body_data.insert("url", url);
 
-        let body = templater.render(template_name, body_data)?;
+        let body = templater.render(template_name, body_data)
+            .map_err(|e| FeatureError::Auth(e))?;
 
         let res = mailer.send(user.email().value().to_string(), "Confirmation email".to_string(), body).await;
 
@@ -71,20 +83,24 @@ impl RegisterUser {
             let mut guard = db_manager.lock().await;
             guard.rollback().await
                 .map_err(|e|
-                    AuthError::Infrastructure(
-                        InfrastructureError::Transaction(e.to_string())
+                    FeatureError::Auth(
+                        AuthError::Infrastructure(
+                            InfrastructureError::Transaction(e.to_string())
+                        )
                     )
                 )?;
 
-            return Err(e);
+            return Err(FeatureError::Auth(e));
         }
 
         let mut guard = db_manager.lock().await;
         guard.commit()
             .await
             .map_err(|e|
-                AuthError::Infrastructure(
-                    InfrastructureError::Transaction(e.to_string())
+                FeatureError::Auth(
+                    AuthError::Infrastructure(
+                        InfrastructureError::Transaction(e.to_string())
+                    )
                 )
             )?;
 

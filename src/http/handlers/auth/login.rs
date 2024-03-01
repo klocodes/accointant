@@ -5,11 +5,11 @@ use actix_web::web::{Data, Json};
 use serde::Deserialize;
 use validator::Validate;
 use crate::di::service_container::ServiceContainer;
-use crate::errors::error::AppError;
 use crate::features::auth::application::login_user::LoginUser;
 use crate::features::auth::infrastructure::adapters::hasher_adapter::HasherAdapter;
 use crate::features::auth::infrastructure::adapters::jwt_adapter::JwtServiceAdapter;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
+use crate::http::error::HttpError;
 
 #[derive(Deserialize, Validate)]
 struct RequestData {
@@ -30,7 +30,7 @@ impl RequestData {
 }
 
 #[post("/login")]
-async fn login(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, AppError> {
+async fn login(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, HttpError> {
 
     let service_container = state.into_inner();
 
@@ -50,7 +50,7 @@ async fn login(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -> R
     let token = login_user.exec(hasher_adapter, jwt_service_adapter, rep)
         .await
         .map_err(|e|
-            AppError::Auth(e)
+            HttpError::Feature(e)
         )?;
 
     let mut response = HashMap::new();

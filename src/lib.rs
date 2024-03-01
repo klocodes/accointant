@@ -21,7 +21,7 @@ pub mod test_utils;
 mod errors;
 pub mod features;
 mod log;
-mod support;
+pub mod support;
 
 pub struct App;
 

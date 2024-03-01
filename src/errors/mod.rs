@@ -3,7 +3,6 @@ use thiserror::Error;
 pub mod client;
 pub mod network;
 pub mod server;
-pub mod error;
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {

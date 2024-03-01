@@ -5,10 +5,10 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::di::service_container::ServiceContainer;
-use crate::errors::error::AppError;
 use crate::features::auth::application::confirm::ConfirmRegistration;
 use crate::features::auth::infrastructure::adapters::tokenizer_adapter::TokenizerAdapter;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
+use crate::http::error::HttpError;
 
 #[derive(Deserialize)]
 pub struct RequestData {
@@ -27,7 +27,7 @@ impl RequestData {
 }
 
 #[get("/confirm")]
-async fn confirm(request_data: Query<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, AppError> {
+async fn confirm(request_data: Query<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, HttpError> {
     let service_container = state.into_inner();
 
     let db_manager = service_container.db_manager();
@@ -44,7 +44,7 @@ async fn confirm(request_data: Query<RequestData>, state: Data<Arc<ServiceContai
     use_case.exec(rep, tokenizer_adapter)
         .await
         .map_err(|e|
-            AppError::Auth(e)
+            HttpError::Feature(e)
         )?;
 
     Ok(HttpResponse::Ok())

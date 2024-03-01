@@ -6,13 +6,13 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::di::service_container::ServiceContainer;
-use crate::errors::error::AppError;
 use crate::features::auth::application::register_user::RegisterUser;
 use crate::features::auth::infrastructure::adapters::hasher_adapter::HasherAdapter;
 use crate::features::auth::infrastructure::adapters::mailer_adapter::MailerAdapter;
 use crate::features::auth::infrastructure::adapters::templater_adapter::TemplaterAdapter;
 use crate::features::auth::infrastructure::adapters::tokenizer_adapter::TokenizerAdapter;
 use crate::features::auth::infrastructure::db_user_repository::DbUserRepository;
+use crate::http::error::HttpError;
 use crate::services::hasher::BcryptHasher;
 use crate::services::templater::Templater;
 
@@ -48,10 +48,10 @@ pub struct ResponseData {
 }
 
 #[post("/register")]
-async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, AppError> {
+async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -> Result<impl Responder, HttpError> {
     if let Err(e) = data.validate() {
         return Err(
-            AppError::RequestValidation(e.to_string())
+            HttpError::RequestValidation(e.to_string())
         );
     }
 
@@ -73,7 +73,7 @@ async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -
     let mut templater = service_container.templater();
     let templater_adapter = TemplaterAdapter::new(templater.clone());
     templater.register(mailer_template_name, "mail/confirm_registration.hbs")
-        .map_err(|e| AppError::Service(e.to_string()))?;
+        .map_err(|e| HttpError::Service(e.to_string()))?;
 
     let user_id = RegisterUser::exec(
         db_manager,
@@ -85,7 +85,7 @@ async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -
         mailer_template_name,
         data.into_inner(),
     ).await.map_err(
-        |e| AppError::Auth(e)
+        |e| HttpError::Feature(e)
     )?;
 
     Ok(
