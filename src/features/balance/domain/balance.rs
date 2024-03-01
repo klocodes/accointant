@@ -1,10 +1,10 @@
-use crate::errors::Error;
 use crate::features::balance::application::commands::change::command::ChangeCommand;
 use crate::features::balance::domain::currency::Currency;
+use crate::features::balance::domain::error::DomainError;
 use crate::features::balance::domain::events::balance_changed::BalanceChanged;
 use crate::features::balance::domain::events::balance_event::BalanceEvent;
 use crate::features::balance::domain::rate::Rate;
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 
 pub struct Balance {
     user_id: Id,
@@ -15,7 +15,7 @@ pub struct Balance {
 }
 
 impl Balance {
-    pub fn handle_change(command: ChangeCommand) -> Result<BalanceEvent, Error> {
+    pub fn handle_change(command: ChangeCommand) -> Result<BalanceEvent, DomainError> {
         let balance = Balance {
             user_id: Id::new(command.user_id()),
             amount: command.amount(),

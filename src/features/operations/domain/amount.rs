@@ -1,19 +1,14 @@
 use serde::{Deserialize, Serialize};
-use crate::errors::client::ClientErrors::BadRequest;
-use crate::errors::Error;
+use crate::features::operations::domain::error::DomainError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Amount(f64);
 
 impl Amount {
-    pub fn new(value: f64) -> Result<Self, Error> {
+    pub fn new(value: f64) -> Result<Self, DomainError> {
         if value <= 0.0 {
             return Err(
-                Error::Client(
-                    BadRequest {
-                        message: Some("Amount must be greater than zero".into()),
-                    }
-                )
+                DomainError::InvalidAmount("Amount must be greater than zero".to_string())
             );
         }
 

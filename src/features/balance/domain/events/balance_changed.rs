@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::features::balance::domain::currency::Currency;
 use crate::features::balance::domain::rate::Rate;
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 
 const NAME: &str = "balance_changed";
 

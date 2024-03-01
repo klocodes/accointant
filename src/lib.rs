@@ -18,7 +18,6 @@ pub mod services;
 pub mod test_utils;
 
 // Private modules
-mod errors;
 pub mod features;
 mod log;
 pub mod support;

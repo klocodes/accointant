@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 use crate::config::manager::ConfigManager;
 use crate::db::factory::DbFactory;
 use crate::db::manager::DbManager;
-use crate::errors::Error;
+use crate::di::error::ServiceContainerError;
 use crate::mq::manager::MqManager;
 use crate::services::hasher::{BcryptHasher, Hasher};
 use crate::services::http_client::{HttpClient, ReqwestClient};
@@ -23,9 +23,11 @@ pub struct ServiceContainer {
 impl ServiceContainer {
     pub async fn new(
         config: ConfigManager,
-    ) -> Result<Self, Error> {
-        let db_manager = DbFactory::create(config.db()).await?;
-        let mq_manager = MqManager::new(config.mq()).await?;
+    ) -> Result<Self, ServiceContainerError> {
+        let db_manager = DbFactory::create(config.db()).await
+            .map_err(|e| ServiceContainerError::DbConnection(e.to_string()))?;
+        let mq_manager = MqManager::new(config.mq()).await
+            .map_err(|e| ServiceContainerError::MqConnection(e.to_string()))?;
 
 
         Ok(Self {

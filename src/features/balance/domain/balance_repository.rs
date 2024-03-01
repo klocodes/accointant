@@ -1,11 +1,11 @@
 use async_trait::async_trait;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::balance::domain::events::balance_changed::BalanceChanged;
+use crate::features::balance::error::BalanceError;
+use crate::features::balance::infrastructure::error::InfrastructureError;
 
 #[async_trait]
 pub trait BalanceRepository {
-    async fn persist_balance_changed_event(&self, balance_changed: &BalanceChanged) -> Result<(), Error>;
+    async fn persist_balance_changed_event(&self, balance_changed: &BalanceChanged) -> Result<(), BalanceError>;
 }
 
 pub struct MockBalanceRepository {
@@ -20,13 +20,13 @@ impl MockBalanceRepository {
 
 #[async_trait]
 impl BalanceRepository for MockBalanceRepository {
-    async fn persist_balance_changed_event(&self, _balance_changed: &BalanceChanged) -> Result<(), Error> {
+    async fn persist_balance_changed_event(&self, _balance_changed: &BalanceChanged) -> Result<(), BalanceError> {
         if self.has_error {
-            Err(Error::Server(
-                InternalServerError {
-                    context: Some("Failed to persist balance event".into())
-                }
-            ))
+            Err(
+                BalanceError::Infrastructure(
+                    InfrastructureError::Repository("Failed to persist balance event".to_string())
+                )
+            )
         } else {
             Ok(())
         }

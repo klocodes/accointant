@@ -6,14 +6,13 @@ use lettre::message::header::ContentType;
 use lettre::transport::smtp::client::Tls;
 use mockall::automock;
 use crate::config::structs::mailer::MailerConfig;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::services::error::ServiceError;
 
 
 #[automock]
 #[async_trait]
 pub trait Mailer {
-    async fn send(&self, email: String, subject: String, body: String) -> Result<(), Error>;
+    async fn send(&self, email: String, subject: String, body: String) -> Result<(), ServiceError>;
 }
 
 #[derive(Clone)]
@@ -39,24 +38,12 @@ impl LettreMailer {
 
 #[async_trait]
 impl Mailer for LettreMailer {
-    async fn send(&self, email: String, subject: String, body: String) -> Result<(), Error> {
+    async fn send(&self, email: String, subject: String, body: String) -> Result<(), ServiceError> {
         let from: Mailbox = self.from.parse().map_err(|e: AddressError| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(
-                        format!("Failed to parse email: {}", e.to_string()).into()
-                    )
-                }
-            )
+            ServiceError::Mailer(e.to_string())
         })?;
         let email: Mailbox = email.parse().map_err(|e: AddressError| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(
-                        format!("Failed to parse email: {}", e.to_string()).into()
-                    )
-                }
-            )
+            ServiceError::Mailer(e.to_string())
         })?;
 
         let single_part = SinglePart::builder()
@@ -69,41 +56,21 @@ impl Mailer for LettreMailer {
             .subject(subject)
             .singlepart(single_part)
             .map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(
-                            format!("Failed to build message: {}", e.to_string()).into()
-                        )
-                    }
-                )
+                ServiceError::Mailer(e.to_string())
             })?;
 
-        // Настройте SMTP клиент для MailHog
         let mailer: AsyncSmtpTransport<Tokio1Executor> = AsyncSmtpTransport::<Tokio1Executor>::relay(&self.host)
             .map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(
-                            format!("Failed to relay mailer: {}", e.to_string()).into()
-                        )
-                    }
-                )
+                ServiceError::Mailer(e.to_string())
             })?
             .port(self.port)
             .tls(Tls::None)
             .build();
 
-        // Отправьте письмо
         mailer.send(message)
             .await
             .map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(
-                            format!("Failed to send email: {}", e.to_string()).into()
-                        )
-                    }
-                )
+                ServiceError::Mailer(e.to_string())
             })?;
 
         Ok(())

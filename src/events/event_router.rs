@@ -1,19 +1,19 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use crate::di::service_container::ServiceContainer;
-use crate::errors::Error;
+use crate::events::error::EventError;
 use crate::events::event_listener::EventListener;
 use crate::features::categories::infrastructure::db_category_repository::DbCategoryRepository;
 use crate::features::categories::infrastructure::event_listeners::category_creation_requested_listener::CategoryCreationRequestedListener;
 use crate::features::tags::infrastructure::db_tag_repository::DbTagRepository;
 use crate::features::tags::infrastructure::event_listeners::tag_creation_requested_listener::TagCreationRequestedListener;
 
-pub struct EventListenerRegistry {
+pub struct EventRouter {
     service_container: Arc<ServiceContainer>,
     listeners: Arc<Mutex<Vec<Box<dyn EventListener>>>>,
 }
 
-impl EventListenerRegistry {
+impl EventRouter {
     pub fn new(service_container: Arc<ServiceContainer>) -> Self {
         Self {
             service_container,
@@ -25,7 +25,7 @@ impl EventListenerRegistry {
         }
     }
 
-    pub async fn register_listeners(&mut self) -> Result<(), Error> {
+    pub async fn register_listeners(&mut self) -> Result<(), EventError> {
         let mut guard = self.listeners.lock().await;
 
 

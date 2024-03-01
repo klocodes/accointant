@@ -1,14 +1,15 @@
 use crate::features::tags::domain::events::tag_created::TAG_CREATED_NAME;
 use async_trait::async_trait;
-use crate::errors::client::ClientErrors::BadRequest;
-use crate::errors::Error;
 use crate::events::event::Event;
 use crate::features::tags::application::commands::create_tag::command::CreateTagCommand;
+use crate::features::tags::domain::error::DomainError;
 use crate::features::tags::domain::tag::Tag;
 use crate::features::tags::domain::tag_repository::TagRepository;
 use crate::features::tags::domain::events::tag_deleted::TAG_DELETED_NAME;
 use crate::features::tags::domain::events::tag_event::TagEvent;
+use crate::features::tags::error::TagError;
 use crate::support::command_bus::{Command, CommandHandler};
+use crate::support::error::FeatureError;
 
 #[derive(Debug, Clone)]
 pub struct CreateTagCommandHandler<R>
@@ -34,26 +35,37 @@ impl<R> CommandHandler<CreateTagCommand> for CreateTagCommandHandler<R>
     where
         R: TagRepository + Send + Sync,
 {
-    async fn handle(&mut self, command: CreateTagCommand) -> Result<Vec<Event>, Error> {
-        let exists = self.tag_repository.exists(TAG_CREATED_NAME, TAG_DELETED_NAME, command.tag_name()).await?;
+    async fn handle(&mut self, command: CreateTagCommand) -> Result<Vec<Event>, FeatureError> {
+        let exists = self.tag_repository.exists(TAG_CREATED_NAME, TAG_DELETED_NAME, command.tag_name())
+            .await
+            .map_err(|e|
+                FeatureError::Tag(e)
+            )?;
 
         if exists {
             return Err(
-                Error::Client(
-                    BadRequest {
-                        message: Some(
-                            format!("Tag with name {} already exists", CreateTagCommand::name()).into()
-                        )
-                    }
+                FeatureError::Tag(
+                    TagError::Domain(
+                        DomainError::TagAlreadyExists(command.tag_name().to_string())
+                    )
                 )
             );
         }
 
-        let event = Tag::handle_creation(command)?;
+        let event = Tag::handle_creation(command)
+            .map_err(|e|
+                FeatureError::Tag(
+                    TagError::Domain(e)
+                )
+            )?;
 
         match event.clone() {
             TagEvent::TagCreated(tag_created) => {
-                self.tag_repository.persist_tag_created_event(&tag_created).await?;
+                self.tag_repository.persist_tag_created_event(&tag_created)
+                    .await
+                    .map_err(|e|
+                        FeatureError::Tag(e)
+                    )?;
             }
         };
 
@@ -66,15 +78,15 @@ impl<R> CommandHandler<CreateTagCommand> for CreateTagCommandHandler<R>
 #[cfg(test)]
 mod tests {
     use uuid::Uuid;
-    use crate::errors::server::ServerErrors::InternalServerError;
     use crate::features::tags::domain::tag_repository::MockTagRepository;
+    use crate::features::tags::infrastructure::error::InfrastructureError;
     use super::*;
 
     #[tokio::test]
     async fn test_create_tag_command_handler_success() {
         let rep = MockTagRepository::new(false, false);
 
-       let mut create_tag_command_handler = CreateTagCommandHandler::new(rep);
+        let mut create_tag_command_handler = CreateTagCommandHandler::new(rep);
 
         let command = create_command_fixture();
         let result = create_tag_command_handler.handle(command).await;
@@ -91,7 +103,16 @@ mod tests {
         let command = create_command_fixture();
         let result = create_tag_command_handler.handle(command).await;
 
-        assert!(matches!(result, Err(Error::Client(BadRequest { .. }))));
+        println!("{:?}", result);
+        assert!(
+            matches!(result, Err(
+                FeatureError::Tag(
+                    TagError::Infrastructure(
+                        InfrastructureError::Repository(..)
+                    )
+                )
+            ))
+        );
     }
 
     #[tokio::test]
@@ -103,9 +124,17 @@ mod tests {
         let command = create_command_fixture();
         let result = create_tag_command_handler.handle(command).await;
 
-        assert!(matches!(result, Err(Error::Server(InternalServerError { .. }))));
+        assert!(
+            matches!(
+                result,
+                Err(
+                    FeatureError::Tag(
+                        TagError::Infrastructure(..)
+                    )
+                )
+            )
+        );
     }
-
 
 
     fn create_command_fixture() -> CreateTagCommand {

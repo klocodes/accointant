@@ -5,8 +5,7 @@ use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, 
 use lapin::types::FieldTable;
 use tokio_executor_trait::Tokio;
 use tokio_reactor_trait::Tokio as TokioReactor;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::mq::error::MqError;
 use crate::mq::message::Message;
 
 const QUEUE_NAME: &str = "default";
@@ -14,9 +13,9 @@ const CONSUMER_TAG: &str = "default";
 
 #[async_trait]
 pub trait MqConnection {
-    async fn send(&self, message: Message) -> Result<(), Error>;
+    async fn send(&self, message: Message) -> Result<(), MqError>;
 
-    async fn consume(&mut self, callback: fn(message: Message) -> Result<(), Error>) -> Result<(), Error>;
+    async fn consume(&mut self, callback: fn(message: Message) -> Result<(), MqError>) -> Result<(), MqError>;
 }
 
 pub struct AmqpConnection {
@@ -27,7 +26,7 @@ pub struct AmqpConnection {
 }
 
 impl AmqpConnection {
-    pub async fn new(url: &str) -> Result<Self, Error> {
+    pub async fn new(url: &str) -> Result<Self, MqError> {
         let connection = Connection::connect(
             url,
             ConnectionProperties::default()
@@ -35,29 +34,17 @@ impl AmqpConnection {
                 .with_reactor(TokioReactor),
         ).await
             .map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(format!("Failed to connect to MQ: {}", e.to_string()).into())
-                    }
-                )
+                MqError::Connection(e.to_string())
             })?;
 
         let channel = connection.create_channel().await.map_err(|e| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(format!("Failed to create MQ channel: {}", e.to_string()).into())
-                }
-            )
+            MqError::Channel(e.to_string())
         })?;
 
         let queue = channel.queue_declare(QUEUE_NAME, QueueDeclareOptions::default(), FieldTable::default())
             .await
             .map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(format!("Failed to declare MQ queue: {}", e.to_string()).into())
-                    }
-                )
+                MqError::Queue(e.to_string())
             })?;
 
         let consumer = channel
@@ -76,7 +63,7 @@ impl AmqpConnection {
 
 #[async_trait]
 impl MqConnection for AmqpConnection {
-    async fn send(&self, message: Message) -> Result<(), Error> {
+    async fn send(&self, message: Message) -> Result<(), MqError> {
 
         let _ = self.channel.basic_publish(
             "",
@@ -85,23 +72,16 @@ impl MqConnection for AmqpConnection {
             message.data().as_slice(),
             BasicProperties::default(),
         ).await.map_err(|e| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(format!("Failed to publish message: {}", e.to_string()).into())
-                }
-            )
+            MqError::Sending(e.to_string())
         });
 
         Ok(())
     }
 
-    async fn consume(&mut self, callback: fn(message: Message) -> Result<(), Error>) -> Result<(), Error> {
+    async fn consume(&mut self, callback: fn(message: Message) -> Result<(), MqError>) -> Result<(), MqError> {
         while let Some(delivery) = self.consumer.next().await {
             let delivery = delivery.map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(format!("Failed to get next delivery: {}", e.to_string()).into())
-                    }
+                MqError::Consuming(e.to_string()
                 )
             })?;
 
@@ -110,11 +90,7 @@ impl MqConnection for AmqpConnection {
             let _result = callback(message)?;
 
             let _ = delivery.ack(BasicAckOptions::default()).await.map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(format!("Failed to ack delivery: {}", e.to_string()).into())
-                    }
-                )
+                MqError::Consuming(e.to_string())
             })?;
         }
 

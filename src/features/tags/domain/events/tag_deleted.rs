@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 
 pub const TAG_DELETED_NAME: &str = "tag_deleted";
 

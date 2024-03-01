@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::support::error::SupportError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Id(Uuid);
@@ -19,13 +18,9 @@ impl Id {
         self.0.to_string()
     }
 
-    pub fn from_string(id: &str) -> Result<Self, Error> {
+    pub fn from_string(id: &str) -> Result<Self, SupportError> {
     let id = Uuid::parse_str(id).map_err(|err| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(err.to_string().into()),
-                }
-            )
+        SupportError::Id(err.to_string())
         })?;
 
         Ok(Self(id))

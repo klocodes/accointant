@@ -1,13 +1,13 @@
 use crate::config::structs::mq::MqConfig;
-use crate::errors::Error;
 use crate::mq::connection::AmqpConnection;
+use crate::mq::error::MqError;
 
 pub struct MqManager {
     connection: AmqpConnection,
 }
 
 impl MqManager {
-    pub async fn new(cfg: &MqConfig) -> Result<Self, Error> {
+    pub async fn new(cfg: &MqConfig) -> Result<Self, MqError> {
         let url = format!(
             "{}://{}:{}@{}:{}",
             cfg.driver(),

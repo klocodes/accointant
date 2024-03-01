@@ -2,8 +2,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::Mutex;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::events::error::EventError;
 use crate::events::event::Event;
 use crate::events::event_bus::EventBus;
 use crate::events::event_listener::EventListener;
@@ -25,7 +24,7 @@ pub struct MqEventBus {
 }
 
 impl MqEventBus {
-    pub async fn new(broker: Arc<MqManager>, serializer: Serializer, listeners: Arc<Mutex<Vec<Box<dyn EventListener>>>>) -> Result<(Self, Receiver<Event>, Receiver<EventResponder>), Error> {
+    pub async fn new(broker: Arc<MqManager>, serializer: Serializer, listeners: Arc<Mutex<Vec<Box<dyn EventListener>>>>) -> Result<(Self, Receiver<Event>, Receiver<EventResponder>), EventError> {
         let (queue_sender, queue_receiver) = tokio::sync::mpsc::channel(QUEUE_BUFFER);
         let (responder, response) = tokio::sync::mpsc::channel(RESPONSE_BUFFER);
 
@@ -45,28 +44,33 @@ impl MqEventBus {
 
 #[async_trait]
 impl EventBus for MqEventBus {
-    async fn publish(&self, event: Event) -> Result<(), Error> {
+    async fn publish(&self, event: Event) -> Result<(), EventError> {
         let mut guard = self.queue.lock().await;
 
         guard.send(event)
-            .await.map_err(|e|
-            Error::Server(
-                InternalServerError {
-                    context: Some(e.to_string().into())
-                }
+            .await
+            .map_err(|e|
+            EventError::Publishing(
+                e.to_string()
             )
         )?;
 
         Ok(())
     }
 
-    async fn start(&self, mut receiver: Receiver<Event>) -> Result<(), Error> {
+    async fn start(&self, mut receiver: Receiver<Event>) -> Result<(), EventError> {
         while let Some(event) = receiver.recv().await {
-            let data = self.serializer.serialize(&event)?;
+            let data = self.serializer.serialize(&event)
+                .map_err(|e|
+                    EventError::Service(e.to_string())
+                )?;
 
             let message = Message::new(data);
 
-            self.broker.connection().send(message).await?;
+            self.broker.connection().send(message).await
+                .map_err(|e|
+                    EventError::Service(e.to_string())
+                )?;
 
             let mut listeners = self.listeners.lock().await;
 
@@ -75,11 +79,7 @@ impl EventBus for MqEventBus {
                     let result = listener.on_event(event.clone()).await;
                     let guard = self.responder.lock().await;
                     guard.send(EventResponder::new(event.clone(), result.clone())).await.map_err(|e|
-                        Error::Server(
-                            InternalServerError {
-                                context: Some(e.to_string().into())
-                            }
-                        )
+                        EventError::ResponseSending(e.to_string())
                     )?;
 
                     if let Ok(events) = result {
@@ -89,11 +89,7 @@ impl EventBus for MqEventBus {
                             guard.send(event)
                                 .await
                                 .map_err(|e|
-                                    Error::Server(
-                                        InternalServerError {
-                                            context: Some(e.to_string().into())
-                                        }
-                                    )
+                                   EventError::QueueSending(e.to_string())
                                 )?;
                         }
                     }

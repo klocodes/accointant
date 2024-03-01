@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::features::operations::domain::error::DomainError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Kind {
@@ -12,22 +11,14 @@ pub enum Kind {
 }
 
 impl Kind {
-    pub fn new(value: &str) -> Result<Self, Error> {
+    pub fn new(value: &str) -> Result<Self, DomainError> {
         match value {
             "Credit" => Ok(Self::Credit),
             "Debt" => Ok(Self::Debt),
             "Expense" => Ok(Self::Expense),
             "Income" => Ok(Self::Income),
             "Transfer" => Ok(Self::Transfer),
-            _ => Err(
-                Error::Server(
-                    InternalServerError {
-                        context: Some(
-                            format!("Unknown operation kind: {}", value).into()
-                        )
-                    }
-                )
-            ),
+            _ => Err(DomainError::UnknownOperationKind),
         }
     }
 

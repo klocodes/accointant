@@ -1,15 +1,14 @@
 use chrono::{Utc};
-use crate::errors::client::ClientErrors::DomainError;
-use crate::errors::Error;
 use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
 use crate::features::operations::domain::amount::Amount;
 use crate::features::operations::domain::currency::Currency;
+use crate::features::operations::domain::error::DomainError;
 use crate::features::operations::domain::events::category_creation_requested::CategoryCreationRequested;
 use crate::features::operations::domain::events::operation_created::OperationCreated;
 use crate::features::operations::domain::events::tag_creation_requested::TagCreationRequested;
 use crate::features::operations::domain::events::operation_event::OperationEvent;
 use crate::features::operations::domain::kind::Kind;
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 
 pub struct Operation {
     id: Id,
@@ -25,7 +24,7 @@ pub struct Operation {
 }
 
 impl Operation {
-    pub fn handle_creation(command: CreateOperationCommand) -> Result<Vec<OperationEvent>, Error> {
+    pub fn handle_creation(command: CreateOperationCommand) -> Result<Vec<OperationEvent>, DomainError> {
         let mut events: Vec<OperationEvent> = vec![];
 
         let operation_id = Id::new(Id::generate());
@@ -38,10 +37,8 @@ impl Operation {
 
         if amount.value() != currency_amount.value() * rate.value() {
             return Err(
-                Error::Client(
-                    DomainError {
-                        message: format!("Amount {} is not equal to currency amount {} by rate {}", amount.value(), currency_amount.value(), rate.value()).into(),
-                    }
+                DomainError::InvalidAmount(
+                    format!("Amount {} is not equal to currency amount {} by rate {}", amount.value(), currency_amount.value(), rate.value())
                 )
             );
         }
@@ -288,7 +285,7 @@ mod operation_creation_tests {
             OperationEvent::OperationCreated(data) => {
                 assert_operation_created_event(data.clone(), command.clone());
 
-                assert_eq!(data.payload().category_id().value(), command.category_id().unwrap()); // Проверка соответствия category_id
+                assert_eq!(data.payload().category_id().value(), command.category_id().unwrap());
 
                 assert_eq!(data.payload().tag_ids().len(), 2);
                 assert!(data.payload().tag_ids().contains(&Id::new(tag1_id)) && data.payload().tag_ids().contains(&Id::new(tag2_id)));
@@ -317,7 +314,7 @@ mod operation_creation_tests {
             OperationEvent::OperationCreated(data) => {
                 assert_operation_created_event(data.clone(), command.clone());
 
-                assert_eq!(data.payload().category_id().to_string().len(), 36); // Проверка формата UUID
+                assert_eq!(data.payload().category_id().to_string().len(), 36);
                 assert_eq!(data.payload().tag_ids().len(), 0);
             }
             _ => {
@@ -350,7 +347,7 @@ mod operation_creation_tests {
 
         let error = result.unwrap_err();
         match error {
-            Error::Client(DomainError { message }) => {
+            DomainError::InvalidAmount(message) => {
                 assert_eq!(message, "Amount 300 is not equal to currency amount 100 by rate 2");
             }
             _ => {
@@ -398,28 +395,28 @@ mod operation_creation_tests {
     }
 
     fn assert_operation_created_event(data: OperationCreated, command: CreateOperationCommand) {
-        assert_eq!(data.id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.payload().id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.payload().user_id().value(), *command.user_id()); // Проверка соответствия user_id
-        assert_eq!(data.payload().kind().to_str(), command.kind()); // Проверка соответствия kind
-        assert_eq!(data.payload().amount().value(), command.amount()); // Проверка значений
-        assert_eq!(data.payload().amount_currency().value(), command.currency_amount()); // Проверка значений
-        assert_eq!(data.payload().currency().to_str(), command.currency()); // Проверка соответствия currency
-        assert_eq!(data.payload().rate().value(), command.rate()); // Проверка значений
+        assert_eq!(data.id().to_string().len(), 36);
+        assert_eq!(data.payload().id().to_string().len(), 36);
+        assert_eq!(data.payload().user_id().value(), *command.user_id());
+        assert_eq!(data.payload().kind().to_str(), command.kind());
+        assert_eq!(data.payload().amount().value(), command.amount());
+        assert_eq!(data.payload().amount_currency().value(), command.currency_amount());
+        assert_eq!(data.payload().currency().to_str(), command.currency());
+        assert_eq!(data.payload().rate().value(), command.rate());
         assert_eq!(data.payload().label(), command.label());
     }
 
     fn assert_category_creation_requested_event(data: CategoryCreationRequested, command: CreateOperationCommand) {
-        assert_eq!(data.payload().operation_id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.payload().user_id().value(), *command.user_id()); // Проверка соответствия user_id
-        assert_eq!(data.payload().category_id().to_string().len(), 36); // Проверка формата UUID
+        assert_eq!(data.payload().operation_id().to_string().len(), 36);
+        assert_eq!(data.payload().user_id().value(), *command.user_id());
+        assert_eq!(data.payload().category_id().to_string().len(), 36);
         assert_eq!(data.payload().category_name(), command.category_name());
     }
 
     fn assert_tag_creation_requested_event(data: TagCreationRequested, command: CreateOperationCommand, command_tag_index: usize) -> Uuid {
-        assert_eq!(data.payload().operation_id().to_string().len(), 36); // Проверка формата UUID
-        assert_eq!(data.payload().user_id().value(), *command.user_id()); // Проверка соответствия user_id
-        assert_eq!(data.payload().tag_id().to_string().len(), 36); // Проверка формата UUID
+        assert_eq!(data.payload().operation_id().to_string().len(), 36);
+        assert_eq!(data.payload().user_id().value(), *command.user_id());
+        assert_eq!(data.payload().tag_id().to_string().len(), 36);
         assert_eq!(data.payload().tag_name(), command.tags()[command_tag_index].name());
 
         data.payload().tag_id().value().clone()

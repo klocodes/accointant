@@ -3,12 +3,11 @@ use std::collections::HashMap;
 use std::fs;
 
 use crate::config::structs::templater::TemplaterConfig;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::services::error::ServiceError;
 
 pub trait Templater: Clone {
-    fn register(&mut self, name: &str, file_path: &str) -> Result<(), Error>;
-    fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, Error>;
+    fn register(&mut self, name: &str, file_path: &str) -> Result<(), ServiceError>;
+    fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, ServiceError>;
 }
 
 #[derive(Clone)]
@@ -27,36 +26,26 @@ impl HandlebarsTemplater<'_> {
 }
 
 impl Templater for HandlebarsTemplater<'_> {
-    fn register(&mut self, name: &str, file_path: &str) -> Result<(), Error> {
+    fn register(&mut self, name: &str, file_path: &str) -> Result<(), ServiceError> {
         let path = format!("{}/{}", self.cfg.dir(), file_path);
 
         let template_string = fs::read_to_string(path)
             .map_err(|e| {
-                Error::Server(InternalServerError {
-                    context: Some(format!("Failed to read template file: {}", e.to_string()).into()),
-                })
+                ServiceError::Templater(e.to_string())
             })?;
 
         self.templater.register_template_string(name, &template_string)
             .map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(
-                            format!("Failed to register template: {}", e.to_string()).into()
-                        )
-                    }
-                )
+                ServiceError::Templater(e.to_string())
             })?;
 
         Ok(())
     }
 
-    fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, Error> {
+    fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, ServiceError> {
         self.templater.render(name, &data)
             .map_err(|e| {
-                Error::Server(InternalServerError {
-                    context: Some(format!("Failed to render template: {}", e.to_string()).into())
-                })
+                ServiceError::Templater(e.to_string())
             })
     }
 }
@@ -67,18 +56,18 @@ pub struct MockTemplater {
 }
 
 impl Templater for MockTemplater {
-    fn register(&mut self, name: &str, file_path: &str) -> Result<(), Error> {
+    fn register(&mut self, name: &str, file_path: &str) -> Result<(), ServiceError> {
         self.templates.insert(name.to_string(), file_path.to_string());
         Ok(())
     }
 
-    fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, Error> {
+    fn render(&self, name: &str, data: HashMap<&str, String>) -> Result<String, ServiceError> {
         if let Some(template) = self.templates.get(name) {
             Ok(format!("Rendered content for {}: {:?}", template, data))
         } else {
-            Err(Error::Server(InternalServerError {
-                context: Some(format!("Template {} not found", name).into())
-            }))
+            Err(
+                ServiceError::Templater("Mock templater error".to_string())
+            )
         }
     }
 }

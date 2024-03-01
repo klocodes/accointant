@@ -1,8 +1,8 @@
-use crate::errors::Error;
 use crate::features::categories::application::commands::create_category::command::CreateCategoryCommand;
+use crate::features::categories::domain::error::DomainError;
 use crate::features::categories::domain::events::category_created::CategoryCreated;
 use crate::features::categories::domain::events::category_event::CategoryEvent;
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 
 pub struct Category {
     id: Id,
@@ -12,10 +12,10 @@ pub struct Category {
 }
 
 impl Category {
-    pub fn handle_creation(command: CreateCategoryCommand) -> Result<CategoryEvent, Error> {
+    pub fn handle_creation(command: CreateCategoryCommand) -> Result<CategoryEvent, DomainError> {
         let id = Id::new(Id::generate());
         let user_id = Id::new(command.user_id().clone());
-        let name = command.name().to_string();
+        let name = command.category_name().to_string();
         let icon = command.icon().clone();
 
         let category = Self {

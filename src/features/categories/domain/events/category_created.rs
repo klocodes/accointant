@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 
 pub const CATEGORY_CREATED_NAME: &str = "category_created";
 

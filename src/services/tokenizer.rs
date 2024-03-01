@@ -2,10 +2,7 @@ use mockall::automock;
 use rand::distributions::Uniform;
 use rand::Rng;
 use regex::Regex;
-
-use crate::errors::client::ClientErrors::DomainError;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::services::error::ServiceError;
 
 const LENGTH: usize = 32;
 const SYMBOLS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -13,8 +10,8 @@ const SYMBOLS: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 
 #[automock]
 pub trait Tokenizer {
-    fn generate(&self) -> Result<String, Error>;
-    fn validate(&self, value: &str) -> Result<(), Error>;
+    fn generate(&self) -> Result<String, ServiceError>;
+    fn validate(&self, value: &str) -> Result<(), ServiceError>;
 }
 
 pub struct SymbolsTokenizer;
@@ -26,7 +23,7 @@ impl SymbolsTokenizer {
 }
 
 impl Tokenizer for SymbolsTokenizer {
-    fn generate(&self) -> Result<String, Error> {
+    fn generate(&self) -> Result<String, ServiceError> {
         let rng = rand::thread_rng();
         let symbols = Uniform::new_inclusive(0, SYMBOLS.chars().count() - 1);
         let value: String = rng
@@ -38,30 +35,18 @@ impl Tokenizer for SymbolsTokenizer {
         Ok(value)
     }
 
-    fn validate(&self, value: &str) -> Result<(), Error> {
+    fn validate(&self, value: &str) -> Result<(), ServiceError> {
         let has_uppercase = Regex::new(r"[A-Z]")
             .map_err(|e|
-                Error::Server(
-                    InternalServerError {
-                        context: Some(format!("Failed to validate confirmation token: {}", e.to_string()).into())
-                    }
-                )
+                ServiceError::Tokenizer(e.to_string())
             )?;
         let has_lowercase = Regex::new(r"[a-z]")
             .map_err(|e|
-                Error::Server(
-                    InternalServerError {
-                        context: Some(format!("Failed to validate confirmation token: {}", e.to_string()).into())
-                    }
-                )
+                ServiceError::Tokenizer(e.to_string())
             )?;
         let has_number = Regex::new(r"\d")
             .map_err(|e|
-                Error::Server(
-                    InternalServerError {
-                        context: Some(format!("Failed to validate confirmation token: {}", e.to_string()).into())
-                    }
-                )
+                ServiceError::Tokenizer(e.to_string())
             )?;
 
         if !has_uppercase.is_match(value) ||
@@ -70,11 +55,7 @@ impl Tokenizer for SymbolsTokenizer {
             value.len() < LENGTH
         {
             return Err(
-                Error::Client(
-                    DomainError {
-                        message: "Token is non valid".into()
-                    }
-                )
+                ServiceError::Tokenizer("Invalid token".to_string())
             );
         }
 
