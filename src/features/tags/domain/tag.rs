@@ -1,8 +1,8 @@
-use crate::errors::Error;
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 use crate::features::tags::domain::events::tag_created::TagCreated;
 use crate::features::tags::domain::events::tag_event::TagEvent;
 use crate::features::tags::application::commands::create_tag::command::CreateTagCommand;
+use crate::features::tags::domain::error::DomainError;
 
 pub struct Tag {
     id: Id,
@@ -11,7 +11,7 @@ pub struct Tag {
 }
 
 impl Tag {
-    pub fn handle_creation(command: CreateTagCommand) -> Result<TagEvent, Error> {
+    pub fn handle_creation(command: CreateTagCommand) -> Result<TagEvent, DomainError> {
         let tag = Self {
             id: Id::new(Id::generate()),
             user_id: Id::new(command.user_id().clone()),

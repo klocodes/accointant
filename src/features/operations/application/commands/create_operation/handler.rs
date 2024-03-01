@@ -1,11 +1,13 @@
+use std::error::Error;
 use async_trait::async_trait;
-use crate::errors::Error;
 use crate::events::event::Event;
 use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
 use crate::features::operations::domain::events::operation_event::OperationEvent;
 use crate::features::operations::domain::operation::Operation;
 use crate::features::operations::domain::operation_repository::OperationRepository;
+use crate::features::operations::error::OperationError;
 use crate::support::command_bus::CommandHandler;
+use crate::support::error::FeatureError;
 
 #[derive(Debug)]
 pub struct CreateOperationCommandHandler<R>
@@ -35,21 +37,30 @@ impl<R> CommandHandler<CreateOperationCommand> for CreateOperationCommandHandler
     where
         R: OperationRepository + Send + Sync,
 {
-    async fn handle(&mut self, command: CreateOperationCommand) -> Result<Vec<Event>, Error> {
+    async fn handle(&mut self, command: CreateOperationCommand) -> Result<Vec<Event>, FeatureError> {
         let mut events = vec![];
-        let operation_events = Operation::handle_creation(command)?;
+        let operation_events = Operation::handle_creation(command)
+            .map_err(|e|
+                FeatureError::Operation(
+                    OperationError::Domain(e)
+                )
+            )?;
 
         for event in operation_events {
             match event {
                 OperationEvent::OperationCreated(ref operation_created) => {
-                    self.rep.persist_operation_created_event(operation_created.clone()).await?;
+                    self.rep.persist_operation_created_event(operation_created.clone())
+                        .await
+                        .map_err(|e|
+                            FeatureError::Operation(e)
+                        )?;
 
                     true
                 }
                 _ => false
             };
 
-           events.push(Event::OperationEvent(event));
+            events.push(Event::OperationEvent(event));
         }
 
         println!("{:?}", events);
@@ -61,7 +72,7 @@ impl<R> CommandHandler<CreateOperationCommand> for CreateOperationCommandHandler
 #[cfg(test)]
 mod tests {
     use crate::features::operations::domain::operation_repository::MockOperationRepository;
-    use crate::features::shared::id::Id;
+    use crate::support::id::Id;
     use super::*;
 
     #[tokio::test]

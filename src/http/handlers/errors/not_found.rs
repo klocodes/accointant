@@ -1,7 +1,6 @@
 use actix_web::{Responder, ResponseError};
-use crate::errors::client::ClientErrors;
-use crate::errors::Error;
+use crate::http::error::HttpError;
 
 pub async fn handle() -> impl Responder {
-    Error::Client(ClientErrors::NotFound {context: None}).error_response()
+    HttpError::NotFound.error_response()
 }

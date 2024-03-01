@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::errors::client::ClientErrors::DomainError;
-use crate::errors::Error;
+use crate::features::balance::domain::error::DomainError;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Rate {
@@ -8,14 +7,10 @@ pub struct Rate {
 }
 
 impl Rate {
-    pub fn new(rate: f64) -> Result<Self, Error> {
+    pub fn new(rate: f64) -> Result<Self, DomainError> {
         if rate <= 0.0 {
             return Err(
-                Error::Client(
-                    DomainError {
-                        message: "Rate cannot be negative".into(),
-                    }
-                )
+                DomainError::RateCannotBeNegative
             )
         }
 

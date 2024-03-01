@@ -1,12 +1,12 @@
 use crate::config::structs::db::DbConfig;
+use crate::db::error::DbError;
 use crate::db::manager::DbManager;
 use crate::db::pg_manager::PgManager;
-use crate::errors::Error;
 
 pub struct DbFactory;
 
 impl DbFactory {
-    pub async fn create(cfg: &DbConfig) -> Result<DbManager, Error> {
+    pub async fn create(cfg: &DbConfig) -> Result<DbManager, DbError> {
         let url = format!("postgres://{}:{}@{}:{}/{}",
                           cfg.user(),
                           cfg.password(),

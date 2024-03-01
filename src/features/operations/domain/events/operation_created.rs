@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::features::operations::domain::amount::Amount;
 use crate::features::operations::domain::currency::Currency;
 use crate::features::operations::domain::kind::Kind;
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 
 pub const OPERATION_CREATED_NAME: &str = "operation_created";
 

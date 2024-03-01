@@ -4,11 +4,10 @@ use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::errors::client::ClientErrors::{BadRequest, DomainError};
-use crate::errors::Error;
 use crate::features::auth::application::dto::user_data::UserData;
 use crate::features::auth::domain::confirmation_token::{ConfirmationToken, EXPIRATION_HOURS};
 use crate::features::auth::domain::email::Email;
+use crate::features::auth::domain::error::DomainError;
 use crate::features::auth::domain::password::Password;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,15 +31,9 @@ pub struct User {
 }
 
 impl User {
-    pub fn register(data: UserData) -> Result<Self, Error> {
+    pub fn register(data: UserData) -> Result<Self, DomainError> {
         if data.password() != data.password_confirmation() {
-            return Err(
-                Error::Client(
-                    BadRequest {
-                        message: Some("Password and password confirmation do not match".into())
-                    }
-                )
-            );
+            return Err(DomainError::PasswordMismatch);
         }
 
         let email = Email::new(data.email().to_string())?;
@@ -63,25 +56,13 @@ impl User {
         )
     }
 
-    pub fn request_confirmation(&mut self, token: String) -> Result<(), Error> {
+    pub fn request_confirmation(&mut self, token: String) -> Result<(), DomainError> {
         if self.confirmed_at.is_some() {
-            return Err(
-                Error::Client(
-                    DomainError {
-                        message: "Email already confirmed".into()
-                    }
-                )
-            );
+            return Err(DomainError::EmailConfirmed);
         }
 
         if !self.confirmation_token.has_expired() {
-            return Err(
-                Error::Client(
-                    DomainError {
-                        message: "Confirmation token has not expired yet".into()
-                    }
-                )
-            );
+            return Err(DomainError::TokenHasNotExpired);
         }
 
         self.confirmation_token = ConfirmationToken::new(
@@ -93,35 +74,17 @@ impl User {
         Ok(())
     }
 
-    pub fn confirm(&mut self, token: String) -> Result<(), Error> {
+    pub fn confirm(&mut self, token: String) -> Result<(), DomainError> {
         if token != self.confirmation_token.value() {
-            return Err(
-                Error::Client(
-                    DomainError {
-                        message: "Confirmation token is invalid".into()
-                    }
-                )
-            );
+            return Err(DomainError::InvalidToken);
         }
 
         if self.confirmation_token.has_expired() {
-            return Err(
-                Error::Client(
-                    DomainError {
-                        message: "Confirmation token has expired".into()
-                    }
-                )
-            );
+            return Err(DomainError::TokenHasNotExpired);
         }
 
         if self.confirmed_at.is_some() {
-            return Err(
-                Error::Client(
-                    DomainError {
-                        message: "Email already confirmed".into()
-                    }
-                )
-            );
+            return Err(DomainError::EmailConfirmed);
         }
 
         self.confirmed_at = Some(chrono::Utc::now());

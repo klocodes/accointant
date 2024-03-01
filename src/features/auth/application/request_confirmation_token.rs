@@ -3,47 +3,55 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use crate::db::manager::DbManager;
-
-use crate::errors::client::ClientErrors::{BadRequest};
-use crate::errors::Error;
+use crate::features::auth::domain::error::DomainError;
 use crate::features::auth::domain::user::User;
 use crate::features::auth::domain::user_repository::UserRepository;
+use crate::features::auth::error::AuthError;
+use crate::features::auth::infrastructure::adapters::mailer_adapter::MailerAdapter;
+use crate::features::auth::infrastructure::adapters::templater_adapter::TemplaterAdapter;
+use crate::features::auth::infrastructure::adapters::tokenizer_adapter::TokenizerAdapter;
+use crate::features::auth::infrastructure::error::InfrastructureError;
 use crate::services::mailer::Mailer;
 use crate::services::templater::Templater;
 use crate::services::tokenizer::Tokenizer;
+use crate::support::error::FeatureError;
 
 pub struct RequestConfirmationToken;
 
 impl RequestConfirmationToken {
-    pub async fn exec<M>(
+    pub async fn exec(
         db_manager: Arc<Mutex<DbManager>>,
         rep: impl UserRepository,
-        tokenizer: impl Tokenizer,
-        mailer: M,
-        templater: impl Templater,
+        tokenizer: TokenizerAdapter<impl Tokenizer>,
+        mailer: MailerAdapter<impl Mailer>,
+        templater: TemplaterAdapter<impl Templater>,
         template_name: &str,
-        user_id: &str,
-    ) -> Result<(), Error>
-        where
-            M: Mailer
+        user_id: Uuid,
+    ) -> Result<(), FeatureError>
     {
-        let user_id = Uuid::parse_str(user_id)
-            .map_err(|e| Error::Client(BadRequest {
-                message: Some(format!("Failed to parse user id: {}", e.to_string()).into())
-            }))?;
-
         let mut user: User = rep.find_by_id(user_id)
-            .await?
+            .await
+            .map_err(|e| FeatureError::Auth(e))?
             .ok_or(
-                Error::Client(BadRequest {
-                    message: Some( "User not found by this email".into())
-                })
+                FeatureError::Auth(
+                    AuthError::Domain(
+                        DomainError::UserNotFound
+                    )
+                )
             )?;
 
-        let token = tokenizer.generate()?;
-        user.request_confirmation(token.clone())?;
+        let token = tokenizer.generate()
+            .map_err(|e| FeatureError::Auth(e))?;
+        user.request_confirmation(token.clone())
+            .map_err(|e|
+                FeatureError::Auth(
+                    AuthError::Domain(e)
+                )
+            )?;
 
-        rep.update_confirmation_token(user.clone()).await?;
+        rep.update_confirmation_token(user.clone())
+            .await
+            .map_err(|e| FeatureError::Auth(e))?;
 
         let mut body_data = HashMap::new();
         let url = format!(
@@ -51,7 +59,8 @@ impl RequestConfirmationToken {
         );
         body_data.insert("url", url);
 
-        let body = templater.render(template_name, body_data)?;
+        let body = templater.render(template_name, body_data)
+            .map_err(|e| FeatureError::Auth(e))?;
         let email = user.email().value().to_string();
         let subject = "Confirmation email".to_string();
 
@@ -60,14 +69,30 @@ impl RequestConfirmationToken {
         if let Err(e) = res {
             let mut guard = db_manager.lock().await;
 
-            guard.rollback().await?;
+            guard.rollback()
+                .await
+                .map_err(|e|
+                    FeatureError::Auth(
+                        AuthError::Infrastructure(
+                            InfrastructureError::Transaction(e.to_string())
+                        )
+                    )
+                )?;
 
-            return Err(e);
+            return Err(FeatureError::Auth(e));
         }
 
         let mut guard = db_manager.lock().await;
 
-        guard.commit().await?;
+        guard.commit()
+            .await
+            .map_err(|e|
+                FeatureError::Auth(
+                    AuthError::Infrastructure(
+                        InfrastructureError::Transaction(e.to_string())
+                    )
+                )
+            )?;
 
         Ok(())
     }

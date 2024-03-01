@@ -3,13 +3,11 @@ use jsonwebtoken::errors::ErrorKind;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::config::structs::auth::AuthConfig;
-use crate::errors::client::ClientErrors::BadRequest;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::services::error::ServiceError;
 
 pub trait JwtService {
-    fn create(&self, claims: Claims) -> Result<String, Error>;
-    fn verify(&self, token: &str) -> Result<Claims, Error>;
+    fn create(&self, claims: Claims) -> Result<String, ServiceError>;
+    fn verify(&self, token: &str) -> Result<Claims, ServiceError>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,15 +30,9 @@ impl Claims {
         &self.sub
     }
 
-    pub fn user_id(&self) -> Result<Uuid, Error> {
+    pub fn user_id(&self) -> Result<Uuid, ServiceError> {
         Uuid::parse_str(&self.sub()).map_err(|e| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(
-                        format!("Failed to parse user id from sub: {}", e.to_string()).into()
-                    )
-                }
-            )
+            ServiceError::Jwt(e.to_string())
         })
     }
 
@@ -66,25 +58,19 @@ impl JsonwebtokenLibService {
 }
 
 impl JwtService for JsonwebtokenLibService {
-    fn create(&self, claims: Claims) -> Result<String, Error> {
+    fn create(&self, claims: Claims) -> Result<String, ServiceError> {
         encode(&Header::default(), &claims, &EncodingKey::from_secret(self.cfg.secret_key().as_ref()))
             .map_err(|e| {
-                Error::Server(
-                    InternalServerError {
-                        context: Some(
-                            format!("Failed to create token: {}", e.to_string()).into()
-                        )
-                    }
-                )
+                ServiceError::Jwt(e.to_string())
             })
     }
 
-    fn verify(&self, token: &str) -> Result<Claims, Error> {
+    fn verify(&self, token: &str) -> Result<Claims, ServiceError> {
         let data = decode::<Claims>(token, &DecodingKey::from_secret(self.cfg.secret_key().as_ref()), &Validation::default())
             .map_err(|e| match e.kind() {
-                ErrorKind::InvalidToken => Error::Client(BadRequest { message: Some("Invalid token.".into()) }),
-                ErrorKind::ExpiredSignature => Error::Client(BadRequest { message: Some("Token expired.".into()) }),
-                _ => Error::Server(InternalServerError { context: Some(format!("Failed to verify jwt: {}", e.to_string()).into()) })
+                ErrorKind::InvalidToken => ServiceError::Jwt("Invalid token.".into()),
+                ErrorKind::ExpiredSignature => ServiceError::Jwt("Token expired.".into()),
+                _ => ServiceError::Jwt(e.to_string()),
             })?;
 
         Ok(data.claims)

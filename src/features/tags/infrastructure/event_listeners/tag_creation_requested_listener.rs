@@ -1,8 +1,7 @@
 use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::events::error::EventError;
 use crate::events::event::Event;
 use crate::events::event_listener::EventListener;
 use crate::features::tags::application::commands::create_tag::command::CreateTagCommand;
@@ -26,13 +25,17 @@ impl<R> EventListener for TagCreationRequestedListener<R>
     where
         R: TagRepository + Clone + Send + Sync + 'static,
 {
-    async fn on_event(&mut self, event: Event) -> Result<Vec<Event>, Error> {
+    async fn on_event(&mut self, event: Event) -> Result<Vec<Event>, EventError> {
         let event = self.parse_event(event)?;
 
         let command = CreateTagCommand::new(event.payload().user_id().value(), event.payload().tag_name().to_string());
 
         let mut guard = self.command_bus.lock().await;
-        let events = guard.dispatch(command).await?;
+        let events = guard.dispatch(command)
+            .await
+            .map_err(|e|
+                EventError::Feature(e)
+            )?;
 
         Ok(events)
     }
@@ -48,7 +51,7 @@ impl<R> TagCreationRequestedListener<R>
 {
     pub async fn new(
         command_bus: Arc<Mutex<CommandBus<CreateTagCommand, CreateTagCommandHandler<R>>>>,
-        rep: R
+        rep: R,
     ) -> Self {
         let handler = CreateTagCommandHandler::new(rep);
 
@@ -60,7 +63,7 @@ impl<R> TagCreationRequestedListener<R>
         }
     }
 
-    pub fn parse_event(&self, event: Event) -> Result<TagCreationRequested, Error> {
+    pub fn parse_event(&self, event: Event) -> Result<TagCreationRequested, EventError> {
         match event {
             Event::OperationEvent(operation_event) => {
                 match operation_event {
@@ -68,19 +71,15 @@ impl<R> TagCreationRequestedListener<R>
                         Ok(tag_creation_requested)
                     }
                     _ => Err(
-                        Error::Server(
-                            InternalServerError {
-                                context: Some("Invalid event type".into()),
-                            }
+                        EventError::Parsing(
+                            format!("Invalid event type. Expected TagCreationRequested, got {:?}", operation_event)
                         )
                     )
                 }
             }
             _ => Err(
-                Error::Server(
-                    InternalServerError {
-                        context: Some("Invalid event type".into()),
-                    }
+                EventError::Parsing(
+                    format!("Invalid event type. Expected OperationEvent, got {:?}", event)
                 )
             )
         }

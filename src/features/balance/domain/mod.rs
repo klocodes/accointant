@@ -3,3 +3,4 @@ pub mod currency;
 pub mod rate;
 pub mod balance_repository;
 pub mod events;
+pub mod error;

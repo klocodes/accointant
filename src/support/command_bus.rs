@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use async_trait::async_trait;
+use thiserror::Error;
 
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
 use crate::events::event::Event;
+use crate::support::error::{FeatureError, SupportError};
 
 pub trait Command {
     fn name() -> &'static str;
@@ -11,7 +11,7 @@ pub trait Command {
 
 #[async_trait]
 pub trait CommandHandler<C: Command>: Send + Sync {
-    async fn handle(&mut self, command: C) -> Result<Vec<Event>, Error>;
+    async fn handle(&mut self, command: C) -> Result<Vec<Event>, FeatureError>;
 }
 
 pub struct CommandBus<C, H>
@@ -39,19 +39,24 @@ impl<C, H> CommandBus<C, H>
         self.handlers.insert(C::name().to_string(), handler);
     }
 
-    pub async fn dispatch(&mut self, command: C) -> Result<Vec<Event>, Error> {
+    pub async fn dispatch(&mut self, command: C) -> Result<Vec<Event>, FeatureError>
+    {
         let name = C::name();
 
-        let handler = self.handlers.get_mut(name).ok_or(
-            Error::Server(
-                InternalServerError {
-                    context: Some(
-                        format!("Handler for command {} not found", name).into()
-                    )
-                }
+        let handler = self.handlers.get_mut(name).ok_or_else(||
+            FeatureError::Support(
+                SupportError::CommandBus(
+                    CommandBusError::HandlerNotFound(name.to_string())
+                )
             )
         )?;
 
         handler.handle(command).await
     }
+}
+
+#[derive(Clone, Debug, Error)]
+pub enum CommandBusError {
+    #[error("Handler for command {0} not found")]
+    HandlerNotFound(String),
 }

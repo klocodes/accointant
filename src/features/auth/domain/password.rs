@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::errors::client::ClientErrors::DomainError;
-use crate::errors::Error;
+use crate::features::auth::domain::error::DomainError;
 
 const MIN_LENGTH: usize = 8;
 
@@ -8,13 +7,11 @@ const MIN_LENGTH: usize = 8;
 pub struct Password(String);
 
 impl Password {
-    pub fn new(hashed_value: String, raw_value: String) -> Result<Self, Error> {
+    pub fn new(hashed_value: String, raw_value: String) -> Result<Self, DomainError> {
         if raw_value.len() < MIN_LENGTH {
-            return Err(Error::Client(
-                DomainError {
-                    message: "Password must be at least 8 characters long".into()
-                }
-            ));
+            return Err(
+                DomainError::InvalidPassword("Password must be at least 8 characters long".to_string())
+            );
         }
 
         Ok(Self(hashed_value))

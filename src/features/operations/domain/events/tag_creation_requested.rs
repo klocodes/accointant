@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::features::shared::id::Id;
+use crate::support::id::Id;
 
 pub const NAME: &str = "tag_creation_requested";
 

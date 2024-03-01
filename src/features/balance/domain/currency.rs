@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::features::balance::domain::error::DomainError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Currency {
@@ -12,7 +11,7 @@ pub enum Currency {
 }
 
 impl Currency {
-    pub fn new(currency: &str) -> Result<Self, Error> {
+    pub fn new(currency: &str) -> Result<Self, DomainError> {
         match currency {
             "USD" => Ok(Self::USD),
             "EUR" => Ok(Self::EUR),
@@ -20,13 +19,7 @@ impl Currency {
             "RUB" => Ok(Self::RUB),
             "GEL" => Ok(Self::GEL),
             _ => Err(
-                Error::Server(
-                    InternalServerError {
-                        context: Some(
-                            format!("Unknown currency: {}", currency).into()
-                        )
-                    }
-                )
+                DomainError::UnknownCurrency(currency.to_string())
             ),
         }
     }

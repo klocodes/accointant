@@ -1,8 +1,7 @@
 use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::events::error::EventError;
 use crate::events::event::Event;
 use crate::events::event_listener::EventListener;
 use crate::features::categories::application::commands::create_category::command::CreateCategoryCommand;
@@ -26,13 +25,15 @@ impl<R> EventListener for CategoryCreationRequestedListener<R>
     where
         R: CategoryRepository + Clone + Send + Sync + 'static,
 {
-    async fn on_event(&mut self, event: Event) -> Result<Vec<Event>, Error> {
+    async fn on_event(&mut self, event: Event) -> Result<Vec<Event>, EventError> {
         let event = self.parse_event(event)?;
 
         let command = CreateCategoryCommand::new(event.payload().user_id().value(), event.payload().category_name().to_string(), None);
 
         let mut guard = self.command_bus.lock().await;
-        let events = guard.dispatch(command).await?;
+        let events = guard.dispatch(command)
+            .await
+            .map_err(|e| EventError::Feature(e))?;
 
         Ok(events)
     }
@@ -60,7 +61,7 @@ impl<R> CategoryCreationRequestedListener<R>
         }
     }
 
-    pub fn parse_event(&self, event: Event) -> Result<CategoryCreationRequested, Error> {
+    pub fn parse_event(&self, event: Event) -> Result<CategoryCreationRequested, EventError> {
         match event {
             Event::OperationEvent(operation_event) => {
                 match operation_event {
@@ -68,20 +69,12 @@ impl<R> CategoryCreationRequestedListener<R>
                         Ok(category_creation_requested)
                     }
                     _ => Err(
-                        Error::Server(
-                            InternalServerError {
-                                context: Some("Invalid event type".into()),
-                            }
-                        )
+                       EventError::Parsing("Invalid operation event type".into())
                     )
                 }
             }
             _ => Err(
-                Error::Server(
-                    InternalServerError {
-                        context: Some("Invalid event type".into()),
-                    }
-                )
+                EventError::Parsing("Invalid event type".into())
             )
         }
     }

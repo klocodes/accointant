@@ -3,10 +3,10 @@ use async_trait::async_trait;
 use sqlx::query;
 use tokio::sync::Mutex;
 use crate::db::manager::DbManager;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::operations::domain::events::operation_created::OperationCreated;
 use crate::features::operations::domain::operation_repository::OperationRepository;
+use crate::features::operations::error::OperationError;
+use crate::features::operations::infrastructure::error::InfrastructureError;
 use crate::services::serializer::Serializer;
 
 pub struct DbOperationRepository {
@@ -25,16 +25,14 @@ impl DbOperationRepository {
 
 #[async_trait]
 impl OperationRepository for DbOperationRepository {
-    async fn persist_operation_created_event(&self, operation_created: OperationCreated) -> Result<(), Error> {
+    async fn persist_operation_created_event(&self, operation_created: OperationCreated) -> Result<(), OperationError> {
         let q = "INSERT INTO operation_events (id, name, payload) VALUES ($1, $2, $3)";
 
         let payload = serde_json::to_value(operation_created.payload()).map_err(|e| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(
-                        format!("Failed to serialize operation created payload: {}", e.to_string()).into()
-                    )
-                }
+            OperationError::Infrastructure(
+                InfrastructureError::Repository(
+                    format!("Failed to serialize operation event payload: {}", e.to_string())
+                )
             )
         })?;
 
@@ -45,24 +43,27 @@ impl OperationRepository for DbOperationRepository {
 
         let mut guard = self.db_manager.lock().await;
         guard.begin().await.map_err(|e| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(
-                        format!("Failed to begin transaction: {}", e.to_string()).into()
-                    )
-                }
+            OperationError::Infrastructure(
+                InfrastructureError::Repository(
+                    format!("Failed to begin transaction: {}", e.to_string())
+                )
             )
         })?;
 
-        let tx = guard.transaction().await?;
+        let tx = guard.transaction().await
+            .map_err(|e| {
+                OperationError::Infrastructure(
+                    InfrastructureError::Repository(
+                        format!("Failed to get transaction: {}", e.to_string())
+                    )
+                )
+            })?;
 
         res_query.execute(&mut **tx).await.map_err(|e| {
-            Error::Server(
-                InternalServerError {
-                    context: Some(
-                        format!("Failed to execute query to create operation: {}", e.to_string()).into()
-                    )
-                }
+            OperationError::Infrastructure(
+                InfrastructureError::Repository(
+                    format!("Failed to persist operation event: {}", e.to_string())
+                )
             )
         })?;
 

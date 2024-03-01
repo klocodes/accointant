@@ -1,11 +1,12 @@
 use async_trait::async_trait;
-use crate::errors::Error;
 use crate::events::event::Event;
 use crate::features::balance::application::commands::change::command::ChangeCommand;
 use crate::features::balance::domain::balance::Balance;
 use crate::features::balance::domain::balance_repository::BalanceRepository;
 use crate::features::balance::domain::events::balance_event::BalanceEvent;
+use crate::features::balance::error::BalanceError;
 use crate::support::command_bus::CommandHandler;
+use crate::support::error::FeatureError;
 
 pub struct ChangeCommandHandler<R: BalanceRepository + Send + Sync> {
     rep: R,
@@ -25,13 +26,20 @@ impl<R> CommandHandler<ChangeCommand> for ChangeCommandHandler<R>
     where
         R: BalanceRepository + Send + Sync,
 {
-    async fn handle(&mut self, command: ChangeCommand) -> Result<Vec<Event>, Error> {
-        let balance_event = Balance::handle_change(command)?;
+    async fn handle(&mut self, command: ChangeCommand) -> Result<Vec<Event>, FeatureError> {
+        let balance_event = Balance::handle_change(command)
+            .map_err(|e|
+                FeatureError::Balance(
+                    BalanceError::Domain(e)
+                )
+            )?;
         let balance_changed = match balance_event.clone() {
             BalanceEvent::BalanceChanged(balance_changed) => balance_changed,
         };
 
-        self.rep.persist_balance_changed_event(&balance_changed).await?;
+        self.rep.persist_balance_changed_event(&balance_changed)
+            .await
+            .map_err(|e| FeatureError::Balance(e))?;
 
         Ok(vec![Event::BalanceEvent(balance_event)])
     }
@@ -40,7 +48,7 @@ impl<R> CommandHandler<ChangeCommand> for ChangeCommandHandler<R>
 #[cfg(test)]
 mod tests {
     use crate::features::balance::domain::balance_repository::MockBalanceRepository;
-    use crate::features::shared::id::Id;
+    use crate::support::id::Id;
     use super::*;
 
     #[tokio::test]

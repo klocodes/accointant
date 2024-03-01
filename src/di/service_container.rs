@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 use crate::config::manager::ConfigManager;
 use crate::db::factory::DbFactory;
 use crate::db::manager::DbManager;
-use crate::errors::Error;
+use crate::di::error::ServiceContainerError;
 use crate::mq::manager::MqManager;
 use crate::services::hasher::{BcryptHasher, Hasher};
 use crate::services::http_client::{HttpClient, ReqwestClient};
@@ -23,9 +23,11 @@ pub struct ServiceContainer {
 impl ServiceContainer {
     pub async fn new(
         config: ConfigManager,
-    ) -> Result<Self, Error> {
-        let db_manager = DbFactory::create(config.db()).await?;
-        let mq_manager = MqManager::new(config.mq()).await?;
+    ) -> Result<Self, ServiceContainerError> {
+        let db_manager = DbFactory::create(config.db()).await
+            .map_err(|e| ServiceContainerError::DbConnection(e.to_string()))?;
+        let mq_manager = MqManager::new(config.mq()).await
+            .map_err(|e| ServiceContainerError::MqConnection(e.to_string()))?;
 
 
         Ok(Self {
@@ -63,7 +65,7 @@ impl ServiceContainer {
         JsonwebtokenLibService::new(self.config.auth().clone())
     }
 
-    pub fn mailer(&self) -> Result<impl Mailer, Error> {
+    pub fn mailer(&self) -> impl Mailer {
         LettreMailer::new(self.config.mailer())
     }
 
@@ -75,10 +77,8 @@ impl ServiceContainer {
         Serializer::Cbor
     }
 
-    pub fn templater(&self) -> Result<impl Templater, Error> {
-        let templater = HandlebarsTemplater::new(self.config.templater().clone());
-
-        Ok(templater)
+    pub fn templater(&self) -> impl Templater {
+        HandlebarsTemplater::new(self.config.templater().clone())
     }
 
     pub fn tokenizer(&self) -> impl Tokenizer {

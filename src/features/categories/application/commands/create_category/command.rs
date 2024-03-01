@@ -21,7 +21,7 @@ impl CreateCategoryCommand {
         &self.user_id
     }
 
-    pub fn name(&self) -> &str {
+    pub fn category_name(&self) -> &str {
         &self.name
     }
 

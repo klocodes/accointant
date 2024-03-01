@@ -18,10 +18,9 @@ pub mod services;
 pub mod test_utils;
 
 // Private modules
-mod errors;
 pub mod features;
 mod log;
-mod support;
+pub mod support;
 
 pub struct App;
 

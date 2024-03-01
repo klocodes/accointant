@@ -1,7 +1,6 @@
 use sqlx::{Pool, Postgres, Transaction};
+use crate::db::error::DbError;
 use crate::db::pg_manager::PgManager;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
 
 #[derive(Debug)]
 pub enum DbManager {
@@ -10,47 +9,39 @@ pub enum DbManager {
 }
 
 impl DbManager {
-    pub fn pool(&self) -> Result<Pool<Postgres>, Error> {
+    pub fn pool(&self) -> Result<Pool<Postgres>, DbError> {
         match self {
             Self::Pg(manager) => manager.pool(),
             Self::Mock(_) => Err(
-                Error::Server(
-                    InternalServerError {
-                        context: Some("Mock database manager does not have a pool".into())
-                    }
-                )
+                DbError::MockPool
             ),
         }
     }
 
-    pub async fn begin(&mut self) -> Result<(), Error> {
+    pub async fn begin(&mut self) -> Result<(), DbError> {
         match self {
             Self::Pg(manager) => manager.begin(manager.pool()?).await,
             Self::Mock(_) => Ok(()),
         }
     }
 
-    pub async fn transaction(&mut self) -> Result<&mut Transaction<'static, Postgres>, Error> {
+    pub async fn transaction(&mut self) -> Result<&mut Transaction<'static, Postgres>, DbError> {
         match self {
             Self::Pg(manager) => manager.transaction().await,
             Self::Mock(_) => Err(
-                Error::Server(
-                    InternalServerError {
-                        context: Some("Transaction has not started".into())
-                    }
-                )
+               DbError::Transaction("Transaction has not started".to_string())
             ),
         }
     }
 
-    pub async fn commit(&mut self) -> Result<(), Error> {
+    pub async fn commit(&mut self) -> Result<(), DbError> {
         match self {
             Self::Pg(manager) => manager.commit().await,
             Self::Mock(_) => Ok(()),
         }
     }
 
-    pub async fn rollback(&mut self) -> Result<(), Error> {
+    pub async fn rollback(&mut self) -> Result<(), DbError> {
         match self {
             Self::Pg(manager) => manager.rollback().await,
             Self::Mock(_) => Ok(()),
@@ -69,28 +60,20 @@ impl MockManager {
         Self { has_error }
     }
 
-    pub async fn commit(&mut self) -> Result<(), Error> {
+    pub async fn commit(&mut self) -> Result<(), DbError> {
         if self.has_error {
             Err(
-                Error::Server(
-                    InternalServerError {
-                        context: Some("Mock database manager has an error".into())
-                    }
-                )
+                DbError::Mock
             )
         } else {
             Ok(())
         }
     }
 
-    pub async fn rollback(&mut self) -> Result<(), Error> {
+    pub async fn rollback(&mut self) -> Result<(), DbError> {
         if self.has_error {
             Err(
-                Error::Server(
-                    InternalServerError {
-                        context: Some("Mock database manager has an error".into())
-                    }
-                )
+               DbError::Mock
             )
         } else {
             Ok(())

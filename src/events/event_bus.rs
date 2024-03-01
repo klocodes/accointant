@@ -1,14 +1,13 @@
 use async_trait::async_trait;
 use tokio::sync::mpsc::Receiver;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
+use crate::events::error::EventError;
 use crate::events::event::Event;
 
 #[async_trait]
 pub trait EventBus: Send + Sync + 'static {
-    async fn publish(&self, event: Event) -> Result<(), Error>;
+    async fn publish(&self, event: Event) -> Result<(), EventError>;
 
-    async fn start(&self, receiver: Receiver<Event>) -> Result<(), Error>;
+    async fn start(&self, receiver: Receiver<Event>) -> Result<(), EventError>;
 }
 
 pub struct MockEventBus {
@@ -25,17 +24,19 @@ impl MockEventBus {
 
 #[async_trait]
 impl EventBus for MockEventBus {
-    async fn publish(&self, _event: Event) -> Result<(), Error> {
+    async fn publish(&self, _event: Event) -> Result<(), EventError> {
         if self.has_error {
-            return Err(Error::Server(InternalServerError {
-                context: Some("Error".into())
-            }));
+            return Err(
+                EventError::Publishing(
+                    "Error publishing event".to_string()
+                )
+            );
         }
 
         Ok(())
     }
 
-    async fn start(&self, _event_receiver: Receiver<Event>) -> Result<(), Error> {
+    async fn start(&self, _event_receiver: Receiver<Event>) -> Result<(), EventError> {
         Ok(())
     }
 }

@@ -3,10 +3,10 @@ use async_trait::async_trait;
 use sqlx::{query, Row};
 use tokio::sync::Mutex;
 use crate::db::manager::DbManager;
-use crate::errors::Error;
-use crate::errors::server::ServerErrors::InternalServerError;
 use crate::features::categories::domain::category_repository::CategoryRepository;
 use crate::features::categories::domain::events::category_created::CategoryCreated;
+use crate::features::categories::error::CategoryError;
+use crate::features::categories::infrastructure::error::InfrastructureError;
 use crate::services::serializer::Serializer;
 
 #[derive(Clone)]
@@ -26,9 +26,16 @@ impl DbCategoryRepository {
 
 #[async_trait]
 impl CategoryRepository for DbCategoryRepository {
-    async fn exists(&self, category_created_name: &str, category_deleted_name: &str, name: &str) -> Result<bool, Error> {
+    async fn exists(&self, category_created_name: &str, category_deleted_name: &str, name: &str) -> Result<bool, CategoryError> {
         let guard = self.db_manager.lock().await;
-        let pool = guard.pool()?;
+        let pool = guard.pool()
+            .map_err(|e|
+                CategoryError::Infrastructure(
+                    InfrastructureError::Repository(
+                        format!("Failed to get pool: {}", e.to_string())
+                    )
+                )
+            )?;
 
         let q = "
             SELECT EXISTS (
@@ -52,35 +59,35 @@ impl CategoryRepository for DbCategoryRepository {
 
         let row = query.fetch_one(&pool).await
             .map_err(|e|
-                Error::Server(
-                    InternalServerError {
-                        context: Some(e.to_string().into())
-                    }
+                CategoryError::Infrastructure(
+                    InfrastructureError::Repository(
+                        format!("Failed to execute persist category creation event query: {}", e.to_string())
+                    )
                 )
             )?;
 
         let exists = row.try_get::<bool, _>(0)
             .map_err(|e|
-                Error::Server(
-                    InternalServerError {
-                        context: Some(e.to_string().into())
-                    }
+                CategoryError::Infrastructure(
+                    InfrastructureError::Repository(
+                        format!("Failed to get exists value: {}", e.to_string())
+                    )
                 )
             )?;
 
         Ok(exists)
     }
 
-    async fn persist_category_created_event(&self, category_created: &CategoryCreated) -> Result<(), Error> {
+    async fn persist_category_created_event(&self, category_created: &CategoryCreated) -> Result<(), CategoryError> {
         let q = "INSERT INTO category_events (id, name, payload) VALUES ($1, $2, $3)";
 
         let payload = serde_json::to_value(
             &category_created.payload()
         ).map_err(|e|
-            Error::Server(
-                InternalServerError {
-                    context: Some(e.to_string().into())
-                }
+            CategoryError::Infrastructure(
+                InfrastructureError::Repository(
+                    format!("Failed to serialize category event payload: {}", e.to_string())
+                )
             )
         )?;
 
@@ -90,14 +97,22 @@ impl CategoryRepository for DbCategoryRepository {
             .bind(payload);
 
         let guard = self.db_manager.lock().await;
+        let pool = guard.pool()
+            .map_err(|e|
+                CategoryError::Infrastructure(
+                    InfrastructureError::Repository(
+                        format!("Failed to get pool: {}", e.to_string())
+                    )
+                )
+            )?;
 
-        query.execute(&guard.pool()?)
+        query.execute(&pool)
             .await
             .map_err(|e|
-                Error::Server(
-                    InternalServerError {
-                        context: Some(e.to_string().into())
-                    }
+                CategoryError::Infrastructure(
+                    InfrastructureError::Repository(
+                        format!("Failed to persist category event: {}", e.to_string())
+                    )
                 )
             )?;
 
