@@ -8,7 +8,7 @@ use metan::events::event::Event;
 use metan::events::event::Event::CategoryEvent;
 use metan::features::operations::domain::events::category_creation_requested::CategoryCreationRequested;
 use metan::features::operations::domain::events::operation_event::OperationEvent::CategoryCreationRequested as CategoryCreationRequestedEvent;
-use metan::features::shared::id::Id;
+use metan::support::id::Id;
 use metan::http::handlers::categories::create::create_category;
 use metan::services::jwt::Claims;
 use metan::services::jwt::JwtService;

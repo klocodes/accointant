@@ -9,7 +9,7 @@ use metan::events::event::Event;
 use metan::events::event::Event::TagEvent;
 use metan::features::operations::domain::events::tag_creation_requested::TagCreationRequested;
 use metan::features::operations::domain::events::operation_event::OperationEvent::TagCreationRequested as TagCreationRequestedEvent;
-use metan::features::shared::id::Id;
+use metan::support::id::Id;
 use metan::http::handlers::tags::create::create_tag;
 use metan::services::jwt::Claims;
 use metan::services::jwt::JwtService;
