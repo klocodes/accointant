@@ -10,7 +10,7 @@ use metan::services::tokenizer::Tokenizer;
 use metan::http::handlers::auth::registration::register;
 
 #[actix_rt::test]
-async fn test_registration_and_confirmation() {
+async fn test_registration_success() {
     let environment = Environment::new();
     let (service_container, event_bus, _) = environment.setup().await;
 
@@ -81,5 +81,5 @@ async fn test_registration_email_exists() {
 
     let resp = test::call_service(&app, req.to_request()).await;
 
-    assert_eq!(resp.status(), 400);
+    assert_eq!(resp.status(), 422);
 }

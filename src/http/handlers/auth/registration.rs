@@ -71,7 +71,7 @@ async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -
     let mailer_template_name = "confirm_registration";
 
     let mut templater = service_container.templater();
-    let templater_adapter = TemplaterAdapter::new(templater.clone());
+    let mut templater = TemplaterAdapter::new(templater.clone());
     templater.register(mailer_template_name, "mail/confirm_registration.hbs")
         .map_err(|e| HttpError::Service(e.to_string()))?;
 
@@ -81,7 +81,7 @@ async fn register(data: Json<RequestData>, state: Data<Arc<ServiceContainer>>) -
         hasher_adapter,
         tokenizer_adapter,
         mailer_adapter,
-        templater_adapter,
+        templater,
         mailer_template_name,
         data.into_inner(),
     ).await.map_err(
