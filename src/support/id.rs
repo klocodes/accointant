@@ -19,8 +19,8 @@ impl Id {
     }
 
     pub fn from_string(id: &str) -> Result<Self, SupportError> {
-    let id = Uuid::parse_str(id).map_err(|err| {
-        SupportError::Id(err.to_string())
+        let id = Uuid::parse_str(id).map_err(|err| {
+            SupportError::Id(err.to_string())
         })?;
 
         Ok(Self(id))

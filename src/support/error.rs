@@ -1,4 +1,5 @@
 use thiserror::Error;
+use crate::features::account::error::AccountError;
 use crate::features::auth::error::AuthError;
 use crate::features::balance::error::BalanceError;
 use crate::features::categories::error::CategoryError;
@@ -10,6 +11,9 @@ use crate::support::command_bus::CommandBusError;
 pub enum FeatureError {
     #[error("Support error. {0}")]
     Support(SupportError),
+
+    #[error("Account bounded context error. {0}")]
+    Account(AccountError),
 
     #[error("Auth bounded context error. {0}")]
     Auth(AuthError),
