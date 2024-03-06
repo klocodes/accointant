@@ -4,6 +4,7 @@ use crate::support::command_bus::Command;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateOperationCommand {
+    account_id: Uuid,
     kind: String,
     user_id: Uuid,
     category_id: Option<Uuid>,
@@ -24,6 +25,7 @@ impl Command for CreateOperationCommand {
 
 impl CreateOperationCommand {
     pub fn new(
+        account_id: Uuid,
         kind: String,
         user_id: Uuid,
         category_id: Option<Uuid>,
@@ -36,6 +38,7 @@ impl CreateOperationCommand {
         tags: Vec<TagData>,
     ) -> Self {
         Self {
+            account_id,
             kind,
             user_id,
             category_id,
@@ -47,6 +50,10 @@ impl CreateOperationCommand {
             label,
             tags,
         }
+    }
+
+    pub fn account_id(&self) -> Uuid {
+        self.account_id
     }
 
     pub fn kind(&self) -> &str {

@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use crate::features::account::domain::dto::creation_command::CreationCommand;
+use crate::features::account::domain::dto::creation_data::CreationData;
 use crate::support::command_bus::Command;
 
 const NAME: &str = "create_account_command";
@@ -77,9 +77,9 @@ impl Command for CreateAccountCommand {
     }
 }
 
-impl From<CreateAccountCommand> for CreationCommand {
+impl From<CreateAccountCommand> for CreationData {
     fn from(command: CreateAccountCommand) -> Self {
-        CreationCommand::new(
+        CreationData::new(
             command.user_id,
             command.name,
             command.amount,

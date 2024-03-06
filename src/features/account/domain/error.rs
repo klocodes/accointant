@@ -13,4 +13,16 @@ pub enum DomainError {
 
     #[error("Invalid amount. {0}")]
     InvalidAmount(String),
+
+    #[error("Unknown operation kind: {0}")]
+    UnknownOperationKind(String),
+
+    #[error("Invalid event. {0}")]
+    InvalidEvent(String),
+
+    #[error("Account not found")]
+    AccountNotFound,
+
+    #[error("Account already exists")]
+    AccountAlreadyExists,
 }

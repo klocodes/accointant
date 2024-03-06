@@ -16,7 +16,8 @@ pub struct OperationCreated {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OperationCreatedPayload {
-    id: Id,
+    operation_id: Id,
+    account_id: Id,
     user_id: Id,
     kind: Kind,
     category_id: Id,
@@ -33,6 +34,7 @@ impl OperationCreated {
     pub fn new(
         id: Id,
         operation_id: Id,
+        account_id: Id,
         user_id: Id,
         kind: Kind,
         category_id: Id,
@@ -48,7 +50,8 @@ impl OperationCreated {
             id,
             name: OPERATION_CREATED_NAME.to_string(),
             payload: OperationCreatedPayload {
-                id: operation_id,
+                operation_id,
+                account_id,
                 user_id,
                 kind,
                 category_id,
@@ -78,8 +81,12 @@ impl OperationCreated {
 }
 
 impl OperationCreatedPayload {
-    pub fn id(&self) -> &Id {
-        &self.id
+    pub fn operation_id(&self) -> &Id {
+        &self.operation_id
+    }
+
+    pub fn account_id(&self) -> &Id {
+        &self.account_id
     }
 
     pub fn user_id(&self) -> &Id {

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::features::account::domain::error::DomainError;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Copy)]
 pub struct Rate {
     rate: f64,
 }

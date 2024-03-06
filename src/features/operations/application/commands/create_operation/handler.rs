@@ -101,6 +101,7 @@ mod tests {
 
     fn command_fixture() -> CreateOperationCommand {
         CreateOperationCommand::new(
+            Id::generate(),
             String::from("Income"),
             Id::generate(),
             Some(Id::generate()),

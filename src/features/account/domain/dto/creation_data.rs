@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
-pub struct CreationCommand {
+pub struct CreationData {
     user_id: Uuid,
     name: String,
     amount: f64,
@@ -12,7 +12,7 @@ pub struct CreationCommand {
     source: Option<String>,
 }
 
-impl CreationCommand {
+impl CreationData {
     pub fn new(
         user_id: Uuid,
         name: String,

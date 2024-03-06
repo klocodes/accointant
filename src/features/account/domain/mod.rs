@@ -6,3 +6,5 @@ pub mod dto;
 pub mod events;
 pub mod source;
 pub mod account_repository;
+pub mod operation_kind;
+pub mod operation_amount;

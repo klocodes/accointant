@@ -13,6 +13,7 @@ use crate::http::extractors::jwt::Jwt;
 
 #[derive(serde::Deserialize)]
 struct RequestData {
+    account_id: Uuid,
     kind: String,
     category_id: Option<Uuid>,
     category_name: String,
@@ -38,6 +39,7 @@ impl RequestData {
         )).collect();
 
         CreateOperationCommand::new(
+            self.account_id,
             self.kind.clone(),
             user_id,
             self.category_id,

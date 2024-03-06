@@ -3,7 +3,8 @@ use crate::events::event::Event;
 use crate::features::account::application::commands::account_creation::command::CreateAccountCommand;
 use crate::features::account::domain::account::Account;
 use crate::features::account::domain::account_repository::AccountRepository;
-use crate::features::account::domain::dto::creation_command::CreationCommand;
+use crate::features::account::domain::dto::creation_data::CreationData;
+use crate::features::account::domain::error::DomainError;
 use crate::features::account::domain::events::account_event::AccountEvent;
 use crate::features::account::error::AccountError;
 use crate::support::command_bus::CommandHandler;
@@ -30,14 +31,23 @@ impl<R> CommandHandler<CreateAccountCommand> for CreateAccountCommandHandler<R>
     where R: AccountRepository + Send + Sync
 {
     async fn handle(&mut self, command: CreateAccountCommand) -> Result<Vec<Event>, FeatureError> {
-        let account_event = Account::handle_creation(CreationCommand::from(command))
+        let account_event = Account::create(CreationData::from(command))
             .map_err(|e| FeatureError::Account(
                 AccountError::Domain(e)
             ))?;
 
         let account_created = match account_event.clone() {
-            AccountEvent::AccountCreated(account_created) => account_created,
-        };
+            AccountEvent::AccountCreated(account_created) => Ok(account_created),
+            _ => {
+                Err(
+                    FeatureError::Account(
+                        AccountError::Domain(
+                            DomainError::InvalidEvent("AccountCreatedEvent not found".to_string())
+                        )
+                    )
+                )
+            }
+        }?;
 
         self.account_repository.persist_account_created_event(account_created)
             .await

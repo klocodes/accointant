@@ -55,7 +55,8 @@ pub async fn create_account(
     )?;
 
     let db_manager = service_container.db_manager();
-    let rep = DbAccountRepository::new(db_manager.clone());
+    let serializer = service_container.serializer();
+    let rep = DbAccountRepository::new(db_manager.clone(), serializer);
 
     let handler = CreateAccountCommandHandler::new(rep);
     let command = request_data.clone().into_command(user_id);

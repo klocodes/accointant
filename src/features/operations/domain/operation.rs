@@ -12,6 +12,7 @@ use crate::support::id::Id;
 
 pub struct Operation {
     id: Id,
+    account_id: Id,
     user_id: Id,
     kind: Kind,
     category_id: Id,
@@ -28,6 +29,7 @@ impl Operation {
         let mut events: Vec<OperationEvent> = vec![];
 
         let operation_id = Id::new(Id::generate());
+        let account_id = Id::new(command.account_id().clone());
         let now = Utc::now();
         let user_id = Id::new(command.user_id().clone());
         let kind = Kind::new(command.kind())?;
@@ -90,6 +92,7 @@ impl Operation {
 
         let operation = Self {
             id: operation_id,
+            account_id,
             user_id: user_id.clone(),
             kind,
             category_id: category_id.clone(),
@@ -105,6 +108,7 @@ impl Operation {
             OperationCreated::new(
                 Id::new(Id::generate()),
                 operation.id().clone(),
+                operation.account_id().clone(),
                 user_id.clone(),
                 operation.kind().clone(),
                 operation.category_id().clone(),
@@ -125,6 +129,10 @@ impl Operation {
 
     pub fn id(&self) -> &Id {
         &self.id
+    }
+
+    pub fn account_id(&self) -> &Id {
+        &self.account_id
     }
 
     pub fn user_id(&self) -> &Id {
@@ -329,6 +337,7 @@ mod operation_creation_tests {
         let category_id = Id::generate();
 
         let command = CreateOperationCommand::new(
+            Id::generate(),
             String::from("Income"),
             user_id,
             Some(category_id),
@@ -381,6 +390,7 @@ mod operation_creation_tests {
         };
 
         CreateOperationCommand::new(
+            Id::generate(),
             String::from("Income"),
             user_id,
             category_id,
@@ -396,7 +406,7 @@ mod operation_creation_tests {
 
     fn assert_operation_created_event(data: OperationCreated, command: CreateOperationCommand) {
         assert_eq!(data.id().to_string().len(), 36);
-        assert_eq!(data.payload().id().to_string().len(), 36);
+        assert_eq!(data.payload().operation_id().to_string().len(), 36);
         assert_eq!(data.payload().user_id().value(), *command.user_id());
         assert_eq!(data.payload().kind().to_str(), command.kind());
         assert_eq!(data.payload().amount().value(), command.amount());

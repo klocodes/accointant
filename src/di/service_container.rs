@@ -77,6 +77,10 @@ impl ServiceContainer {
         Serializer::Cbor
     }
 
+    pub fn json_serializer(&self) -> Serializer {
+        Serializer::Json
+    }
+
     pub fn templater(&self) -> impl Templater {
         HandlebarsTemplater::new(self.config.templater().clone())
     }
