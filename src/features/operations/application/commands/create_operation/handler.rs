@@ -2,6 +2,7 @@ use std::error::Error;
 use async_trait::async_trait;
 use crate::events::event::Event;
 use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
+use crate::features::operations::domain::dto::creation_data::CreationData;
 use crate::features::operations::domain::events::operation_event::OperationEvent;
 use crate::features::operations::domain::operation::Operation;
 use crate::features::operations::domain::operation_repository::OperationRepository;
@@ -39,7 +40,7 @@ impl<R> CommandHandler<CreateOperationCommand> for CreateOperationCommandHandler
 {
     async fn handle(&mut self, command: CreateOperationCommand) -> Result<Vec<Event>, FeatureError> {
         let mut events = vec![];
-        let operation_events = Operation::handle_creation(command)
+        let operation_events = Operation::create(CreationData::from(command))
             .map_err(|e|
                 FeatureError::Operation(
                     OperationError::Domain(e)

@@ -1,11 +1,6 @@
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::features::operations::domain::dto::creation_data::CreationData;
-use crate::features::operations::domain::dto::creation_data::TagData as DomainTagData;
-use crate::support::command_bus::Command;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateOperationCommand {
+pub struct CreationData {
     account_id: Uuid,
     kind: String,
     user_id: Uuid,
@@ -19,13 +14,12 @@ pub struct CreateOperationCommand {
     tags: Vec<TagData>,
 }
 
-impl Command for CreateOperationCommand {
-    fn name() -> &'static str {
-        "CreateOperationCommand"
-    }
+pub struct TagData {
+    id: Option<Uuid>,
+    name: String,
 }
 
-impl CreateOperationCommand {
+impl CreationData {
     pub fn new(
         account_id: Uuid,
         kind: String,
@@ -99,17 +93,8 @@ impl CreateOperationCommand {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TagData {
-    #[serde(rename = "tag_id")]
-    id: Option<Uuid>,
-
-    #[serde(rename = "tag_name")]
-    name: String,
-}
-
 impl TagData {
-    pub fn new (id: Option<Uuid>, name: String) -> Self {
+    pub fn new(id: Option<Uuid>, name: String) -> Self {
         Self { id, name }
     }
 
@@ -119,32 +104,5 @@ impl TagData {
 
     pub fn name(&self) -> &str {
         &self.name
-    }
-}
-
-impl From<CreateOperationCommand> for CreationData {
-    fn from(command: CreateOperationCommand) -> Self {
-        let tags = command.tags().iter()
-            .map(|tag| {
-                DomainTagData::new(
-                    tag.id().clone(),
-                    tag.name().to_string(),
-                )
-            })
-            .collect();
-
-        Self::new(
-            command.account_id(),
-            command.kind().to_string(),
-            command.user_id().clone(),
-            command.category_id().clone(),
-            command.category_name().to_string(),
-            command.amount(),
-            command.currency().to_string(),
-            command.currency_amount(),
-            command.rate(),
-            command.label().to_string(),
-            tags
-        )
     }
 }

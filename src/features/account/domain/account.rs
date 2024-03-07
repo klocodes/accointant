@@ -106,7 +106,7 @@ impl Account {
         for event in events {
             account = match event {
                 AccountEvent::AccountCreated(account_created) => {
-                    if (account.is_some()) {
+                    if account.is_some() {
                         return Err(DomainError::AccountNotFound);
                     }
 

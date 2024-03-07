@@ -2,6 +2,7 @@ use chrono::{Utc};
 use crate::features::operations::application::commands::create_operation::command::CreateOperationCommand;
 use crate::features::operations::domain::amount::Amount;
 use crate::features::operations::domain::currency::Currency;
+use crate::features::operations::domain::dto::creation_data::CreationData;
 use crate::features::operations::domain::error::DomainError;
 use crate::features::operations::domain::events::category_creation_requested::CategoryCreationRequested;
 use crate::features::operations::domain::events::operation_created::OperationCreated;
@@ -25,17 +26,17 @@ pub struct Operation {
 }
 
 impl Operation {
-    pub fn handle_creation(command: CreateOperationCommand) -> Result<Vec<OperationEvent>, DomainError> {
+    pub fn create(data: CreationData) -> Result<Vec<OperationEvent>, DomainError> {
         let mut events: Vec<OperationEvent> = vec![];
 
         let operation_id = Id::new(Id::generate());
-        let account_id = Id::new(command.account_id().clone());
+        let account_id = Id::new(data.account_id().clone());
         let now = Utc::now();
-        let user_id = Id::new(command.user_id().clone());
-        let kind = Kind::new(command.kind())?;
-        let amount = Amount::new(command.amount())?;
-        let currency_amount = Amount::new(command.currency_amount())?;
-        let rate = Amount::new(command.rate())?;
+        let user_id = Id::new(data.user_id().clone());
+        let kind = Kind::new(data.kind())?;
+        let amount = Amount::new(data.amount())?;
+        let currency_amount = Amount::new(data.currency_amount())?;
+        let rate = Amount::new(data.rate())?;
 
         if amount.value() != currency_amount.value() * rate.value() {
             return Err(
@@ -45,7 +46,7 @@ impl Operation {
             );
         }
 
-        let category_id = match command.category_id() {
+        let category_id = match data.category_id() {
             Some(id) => Id::new(id.clone()),
             None => {
                 let category_id = Id::new(Id::generate());
@@ -55,7 +56,7 @@ impl Operation {
                         operation_id.clone(),
                         user_id.clone(),
                         category_id.clone(),
-                        command.category_name().to_string(),
+                        data.category_name().to_string(),
                     )
                 );
 
@@ -65,12 +66,12 @@ impl Operation {
             }
         };
 
-        let currency = Currency::new(command.currency())?;
-        let label = command.label().to_string();
+        let currency = Currency::new(data.currency())?;
+        let label = data.label().to_string();
 
         let mut tags: Vec<Id> = vec![];
 
-        for tag in command.tags() {
+        for tag in data.tags() {
             if tag.id().is_none() {
                 let tag_id = Id::new(Id::generate());
                 let tag_creation_requested = OperationEvent::TagCreationRequested(
@@ -183,7 +184,7 @@ mod operation_creation_tests {
         // Create command
         let command = create_operation_command_fixture(true, true, false);
 
-        let result = Operation::handle_creation(command.clone());
+        let result = Operation::create(CreationData::from(command.clone()));
         assert!(result.is_ok());
 
         let events = result.unwrap();
@@ -213,7 +214,7 @@ mod operation_creation_tests {
     pub fn test_operation_creation_with_new_category() {
         let command = create_operation_command_fixture(false, true, false);
 
-        let result = Operation::handle_creation(command.clone());
+        let result = Operation::create(CreationData::from(command.clone()));
         assert!(result.is_ok());
 
         // Event must be two (CategoryCreationRequested and OperationCreated)
@@ -252,7 +253,7 @@ mod operation_creation_tests {
     pub fn test_operation_creation_with_new_tags() {
         let command = create_operation_command_fixture(true, true, true);
 
-        let result = Operation::handle_creation(command.clone());
+        let result = Operation::create(CreationData::from(command.clone()));
         assert!(result.is_ok());
 
         // Event must be three (TagCreationRequested, TagCreationRequested and OperationCreated)
@@ -308,7 +309,7 @@ mod operation_creation_tests {
     pub fn test_operation_creation_without_tags() {
         let command = create_operation_command_fixture(true, false, false);
 
-        let result = Operation::handle_creation(command.clone());
+        let result = Operation::create(CreationData::from(command.clone()));
 
         assert!(result.is_ok());
 
@@ -350,7 +351,7 @@ mod operation_creation_tests {
             vec![],
         );
 
-        let result = Operation::handle_creation(command.clone());
+        let result = Operation::create(CreationData::from(command.clone()));
 
         assert!(result.is_err());
 
