@@ -3,8 +3,14 @@ use crate::support::error::FeatureError;
 
 #[derive(Clone, Debug, Error)]
 pub enum EventError {
+    #[error("Channel {0} not found")]
+    ChannelNotFound(String),
+
     #[error("Event publishing error. {0}")]
     Publishing(String),
+
+    #[error("Event subscribing error. {0}")]
+    Subscribing(String),
 
     #[error("Feature handling event error. {0}")]
     Feature(FeatureError),

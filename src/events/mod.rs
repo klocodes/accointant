@@ -6,3 +6,4 @@ pub mod event_router;
 pub mod mq_event_bus;
 pub mod event_responder;
 pub mod error;
+mod event_channel;

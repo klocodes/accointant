@@ -2,6 +2,7 @@ use std::sync::Arc;
 use actix_web::{HttpResponse, post, Responder};
 use actix_web::web::{Data, Json};
 use serde::Deserialize;
+use tokio::sync::Mutex;
 use crate::di::service_container::ServiceContainer;
 use crate::events::event_bus::EventBus;
 use crate::features::categories::application::commands::create_category::command::CreateCategoryCommand;
@@ -22,10 +23,10 @@ pub async fn create_category(
     request_data: Json<RequestData>,
     jwt: Jwt,
     service_container: Data<Arc<ServiceContainer>>,
-    event_bus: Data<Arc<Box<dyn EventBus>>>
+    event_bus: Data<Arc<Mutex<Box<dyn EventBus>>>>
 ) -> Result<impl Responder, HttpError> {
     let service_container = service_container.into_inner().clone();
-    let event_bus = event_bus.into_inner().as_ref().clone();
+    let mut event_bus = event_bus.lock().await;
 
     let jwt_service = service_container.jwt_service();
     let claims = jwt_service.verify(jwt.0.as_str()).map_err(|e|

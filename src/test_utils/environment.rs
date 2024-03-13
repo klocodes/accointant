@@ -1,12 +1,11 @@
 use std::env;
 use std::process::{Command, Stdio};
-use std::sync::{Arc};
-use tokio::sync::mpsc::Receiver;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use crate::config::manager::ConfigManager;
 use crate::di::service_container::ServiceContainer;
 use crate::events::event_bus::EventBus;
 use crate::events::event_bus_factory::EventBusFactory;
-use crate::events::event_responder::EventResponder;
 
 pub struct Environment {
     db_url: String,
@@ -26,7 +25,7 @@ impl Environment {
     }
 
     // Load environment variables from .env file
-    pub async fn setup(&self) -> (Arc<ServiceContainer>, Arc<Box<dyn EventBus>>, Receiver<EventResponder>) {
+    pub async fn setup(&self) -> (Arc<ServiceContainer>, Arc<Mutex<Box<dyn EventBus>>>) {
         self.wait_for_db_ready().await;
         self.migrate();
 
@@ -36,14 +35,9 @@ impl Environment {
         let service_container = ServiceContainer::new(config).await.expect("Failed to create service container");
         let service_container = Arc::new(service_container);
 
-        let (event_bus, receiver, response) = EventBusFactory::create(service_container.clone()).await.expect("Failed to create event bus");
+        let event_bus = EventBusFactory::create(service_container.clone()).await.expect("Failed to create event bus");
 
-        let event_bus_clone = event_bus.clone();
-        tokio::spawn(async move {
-            event_bus_clone.start(receiver).await.expect("Failed to start event bus");
-        });
-
-        (service_container, event_bus, response)
+        (service_container, event_bus)
     }
 
     pub fn db_url() -> String {

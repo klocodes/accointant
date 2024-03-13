@@ -3,13 +3,14 @@ use actix_web::{App, HttpServer};
 use actix_web::middleware::Logger;
 use actix_web::web::Data;
 use env_logger::Env;
+use tokio::sync::Mutex;
 use crate::di::service_container::ServiceContainer;
 use crate::events::event_bus::EventBus;
 use crate::http::routes::Routes;
 
 pub async fn run(
     service_container: Arc<ServiceContainer>,
-    event_bus: Arc<Box<dyn EventBus>>,
+    event_bus: Arc<Mutex<Box<dyn EventBus>>>,
 ) -> std::io::Result<()> {
     let cfg = service_container.config().server().clone();
 

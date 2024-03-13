@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use actix_web::{HttpResponse, post, Responder};
 use actix_web::web::{Data, Json};
+use tokio::sync::Mutex;
 use uuid::Uuid;
 use crate::features::operations::infrastructure::db_operation_repository::DbOperationRepository;
 use crate::di::service_container::ServiceContainer;
@@ -59,8 +60,9 @@ pub async fn create_operation(
     jwt: Jwt,
     request_data: Json<RequestData>,
     service_container: Data<Arc<ServiceContainer>>,
-    event_bus: Data<Arc<Box<dyn EventBus>>>,
+    event_bus: Data<Arc<Mutex<Box<dyn EventBus>>>>,
 ) -> Result<impl Responder, HttpError> {
+    let mut event_bus = event_bus.lock().await;
     let jwt_service = service_container.jwt_service();
     let user_id = jwt_service.verify(jwt.0.as_str())
         .map_err(|e|

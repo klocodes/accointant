@@ -2,6 +2,7 @@ use std::sync::Arc;
 use actix_web::{HttpResponse, post, Responder};
 use actix_web::web::{Data, Json};
 use serde::Deserialize;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 use crate::di::service_container::ServiceContainer;
 use crate::events::event_bus::EventBus;
@@ -44,8 +45,9 @@ pub async fn create_account(
     jwt: Jwt,
     request_data: Json<RequestData>,
     service_container: Data<Arc<ServiceContainer>>,
-    event_bus: Data<Arc<Box<dyn EventBus>>>
+    event_bus: Data<Arc<Mutex<Box<dyn EventBus>>>>
 ) -> Result<impl Responder, HttpError> {
+    let mut event_bus = event_bus.lock().await;
     let jwt_service = service_container.jwt_service();
     let claims = jwt_service.verify(jwt.0.as_str()).map_err(|e|
         HttpError::Service(e.to_string())
